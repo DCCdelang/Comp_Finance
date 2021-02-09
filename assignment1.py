@@ -4,7 +4,7 @@ from math import *
 from scipy.stats import norm
 
 
-def buildTree(S,vol,T,N):
+def buildTree(S,sigma,T,N):
     dt=T/N
     matrix=np.zeros((N+1,N+1))
     
@@ -26,7 +26,7 @@ def buildTree(S,vol,T,N):
 
 
 
-def valueOptionMatrix( tree , T, r , K, vol,N ) :
+def valueOptionMatrix( tree , T, r , K, sigma,N ) :
     dt = T / N
     u = np.exp(sigma * np.sqrt(dt))
     d = np.exp( - sigma * np.sqrt(dt))
@@ -60,65 +60,65 @@ def valueOptionMatrix( tree , T, r , K, vol,N ) :
 
 
 sigmas = np.linspace(0.05, 0.95, 19)
-print(sigmas)
+sigma = 0.2
 S = 99
 T = 1.
-N = 2
+N = 50
 K = 100
 r = 0.06
 
-# tree = buildTree(S,sigma,T,N)
-# valueOptionMatrix( tree , T, r , K, sigma )
 
 def N_(x):
     #'Cumulative distribution function for the standard normal distribution'
-    print((1.0 + erf(x / sqrt(2.0))) / 2.0)
-    print(norm.cdf(x))
-    return (1.0 + erf(x / sqrt(2.0))) / 2.0
+
+    # print((1.0 + erf(x / sqrt(2.0))) / 2.0)
+    
+    return norm.cdf(x)
 
 def black_scholes(S,N,T,sigma,r,K):
-    # a = np.log(S/K)
-    # b = (r-sigma**2)/2
-    # c = sigma * np.sqrt(T)
-
-    # d = (a+b*T)/c
-    # d_1 = d + c
-    # print(a,b,c)
     d = ((np.log(S/K) + ((r-(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
     d_1 = d + sigma* np.sqrt(T)
     return (S*N_(d_1)) - (K*np.exp(-r*T)*N_(d))
 
-# Play around with different ranges of N and step sizes .
-y_ = []
-z_ = []
-for sigma in sigmas:
+def convergence(S,N,T,sigma,r,K):
     y = []
     z = []
-    X = 51
+
     # Calculate the option price for the correct parameters
     optionPriceAnalytical = black_scholes(S,N,T,sigma,r,K)
-    # raise ValueError()
-    # print(optionPriceAnalytical)
     
     # calculate option price for each n in N
-    for n in range(1, X):
-        # print(n)
+    for n in range(1, N):
         treeN = buildTree(S,sigma,T,n) 
         priceApproximatedly = valueOptionMatrix(treeN,T,r,K,sigma,n)[0][0]
         y.append(priceApproximatedly)
         z.append(optionPriceAnalytical)
-    y_.append(abs(priceApproximatedly - optionPriceAnalytical))
-        
-        
+
+
     # use matplotlib to plot the analytical value
     # and the approximated value for each n
-    plt.plot(range(X-1), z)
-    plt.plot(range(X-1), y)
+    plt.plot(range(N-1), z)
+    plt.plot(range(N-1), y)
     plt.show()
 
-# print(z[-1], y[-1])
-# plt.plot(sigmas, z_)
-plt.plot(sigmas, y_)
+def sigma_change(S,N,T,sigmas,r,K):
+    y_ = []
+
+    for sigma in sigmas:
+        # Calculate the option price for the correct parameters
+        optionPriceAnalytical = black_scholes(S,N,T,sigma,r,K)
+        print(sigma)
+        
+        # calculate option price for each n in N
+        for n in range(1, N):
+            print(sigma)
+            treeN = buildTree(S,sigma,T,n) 
+            priceApproximatedly = valueOptionMatrix(treeN,T,r,K,sigma,n)[0][0]
+        y_.append(abs(priceApproximatedly - optionPriceAnalytical))
+    plt.plot(sigmas, y_)
 
 
-plt.show()
+    plt.show()
+
+# sigma_change(S,N,T,sigmas,r,K)
+convergence(S,N,T,sigma,r,K)
