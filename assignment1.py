@@ -120,5 +120,5 @@ def sigma_change(S,N,T,sigmas,r,K):
 
     plt.show()
 
-# sigma_change(S,N,T,sigmas,r,K)
+sigma_change(S,N,T,sigmas,r,K)
 convergence(S,N,T,sigma,r,K)
