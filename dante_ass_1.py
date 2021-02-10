@@ -5,8 +5,10 @@ import sys
 import numpy as np
 np.set_printoptions(threshold=sys.maxsize)
 import matplotlib.pyplot as plt
+from scipy.stats import norm
 
-""" B - The Binomial Tree"""
+
+""" Needed functions through whole assignment """
 def buildTree(S, vol, T, N):
     dt = T/N
     matrix = np.zeros((N+1, N+1))
@@ -48,50 +50,43 @@ def valueOptionMatrix(tree, T, r, K, vol, N):
     
     return tree
 
-vol = 0.2
-S = 80
-T = 1.
+def N_func(x):
+    return norm.cdf(x)
 
+def black_scholes(vol, S, T, K, r):
+    d1 = (np.log(S/K) + (r+0.5*vol**2)*T)/(vol*T**0.5)
+    d2 = d1 - (vol*T**0.5)
+    return S * N_func(d1) - np.exp(-r * T) * K * N_func(d2)
+
+""" Part 1.1"""
+S = 99
+T = 1
+r = 0.06
+K = 100
+vol = 0.2
 N = 50
 
-K = 85
-r = 0.1
-
 tree = buildTree(S, vol, T, N)
+approx_option_price = valueOptionMatrix(tree, T, r, K, vol, N)[0,0]
+print("For 1.1 option price approximation is", approx_option_price)
 
-def N(x):
-    np.cfnd
-
+""" Comparison of option price approximation to black scholes"""
 errorList = []
 analyticalList = []
 approxList = []
 for n in range(1,N+1):
     treeN = buildTree(S, vol, T, n)
-    d1 = (np.log(S/K) + (r+0.5*vol**2)*T)/(vol*T**0.5)
-    d2 = d1 - (vol*T**0.5)
-    optionPriceAnalytical = S * N(d1) - np.exp(-r * T) * K * N(d2)
+    optionPriceAnalytical = black_scholes(vol, S, T, K, r)
     priceApproximatedly = valueOptionMatrix(treeN, T, r, K, vol, n)[0,0]
+
     errorList.append(optionPriceAnalytical- priceApproximatedly)
     analyticalList.append(optionPriceAnalytical)
     approxList.append(priceApproximatedly)
 
-plt.plot(range(1,N+1),errorList,label="error")
 plt.plot(range(1,N+1),analyticalList, label = "analytical")
 plt.plot(range(1,N+1),approxList, label="approx")
 plt.xlabel("N")
-plt.ylabel("Error")
+plt.ylabel("Value")
 plt.legend()
 plt.show()
-
-
-""" C - The Black Scholes Model """
-
-# r = constant
-# vol = constant
-# z_t = brownian/wiener
-
-# dSt = r * St * dt + vol * St * z_t
-
-""" REAAAAAL ASSIGNMENT """
-# Part 1.1
 
