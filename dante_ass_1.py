@@ -1,3 +1,4 @@
+#%%
 """
 Assignment 1 Computational Finance
 """
@@ -7,8 +8,10 @@ np.set_printoptions(threshold=sys.maxsize)
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 
-
-""" Needed functions through whole assignment """
+#%%
+""" 
+Part 1.1: Price approximation
+"""
 def buildTree(S, vol, T, N):
     dt = T/N
     matrix = np.zeros((N+1, N+1))
@@ -23,7 +26,7 @@ def buildTree(S, vol, T, N):
     return matrix
 
 
-def valueOptionMatrix(tree, T, r, K, vol, N):
+def valueOptionMatrix(tree, T, r, K, vol, N, option="Call", type_option="European"):
     dt = T/N
     u = np.exp(vol * np.sqrt(dt))
     d = np.exp(-vol * np.sqrt(dt))
@@ -32,13 +35,16 @@ def valueOptionMatrix(tree, T, r, K, vol, N):
 
     colomns = tree.shape[1]
     rows = tree.shape[0]
-
+    tree_copy = tree.copy()
     # Walk backward, starting in last row of the matrix
 
     # Add the payoff functions in the last row
     for c in np.arange(colomns):
         S = tree[rows-1, c]
-        tree[rows-1, c] = max(S-K,0)
+        if option == "Call":
+            tree[rows-1, c] = max(S-K,0)
+        elif option == "Put":
+            tree[rows-1, c] = max(K-S,0)
 
     # For all other rows, we need to combine from previousrows
     # We walk backwards, from the last row to the first row
@@ -46,19 +52,16 @@ def valueOptionMatrix(tree, T, r, K, vol, N):
         for j in np.arange(i+1):
             down = tree[i+1,j]
             up = tree[i+1,j+1]
-            tree[i,j] = (p*up+(1-p)*down) * np.exp(-r*dt)
+            if type_option == "European":
+                tree[i,j] = (p*up+(1-p)*down) * np.exp(-r*dt)
+            elif type_option == "American":
+                payoff1 = (p*up+(1-p)*down) * np.exp(-r*dt)
+                payoff2 = K - tree_copy[i,j]
+                tree[i,j] = max(payoff1,payoff2)
+    
     
     return tree
 
-def N_func(x):
-    return norm.cdf(x)
-
-def black_scholes(vol, S, T, K, r):
-    d1 = (np.log(S/K) + (r+0.5*vol**2)*T)/(vol*T**0.5)
-    d2 = d1 - (vol*T**0.5)
-    return S * N_func(d1) - np.exp(-r * T) * K * N_func(d2)
-
-""" Part 1.1"""
 S = 99
 T = 1
 r = 0.06
@@ -69,24 +72,136 @@ N = 50
 tree = buildTree(S, vol, T, N)
 approx_option_price = valueOptionMatrix(tree, T, r, K, vol, N)[0,0]
 print("For 1.1 option price approximation is", approx_option_price)
+#%%
+""" 
+Part 1.2: Comparison of option price approximation to black scholes, different
+volatilities.
+"""
 
-""" Comparison of option price approximation to black scholes"""
-errorList = []
-analyticalList = []
-approxList = []
-for n in range(1,N+1):
-    treeN = buildTree(S, vol, T, n)
-    optionPriceAnalytical = black_scholes(vol, S, T, K, r)
-    priceApproximatedly = valueOptionMatrix(treeN, T, r, K, vol, n)[0,0]
+def N_func(x):
+    return norm.cdf(x)
 
-    errorList.append(optionPriceAnalytical- priceApproximatedly)
-    analyticalList.append(optionPriceAnalytical)
-    approxList.append(priceApproximatedly)
+def black_scholes(vol, S, T, K, r):
+    d1 = (np.log(S/K) + (r+0.5*vol**2)*T)/(vol*T**0.5)
+    d2 = d1 - (vol*T**0.5)
+    return S * N_func(d1) - np.exp(-r * T) * K * N_func(d2)
 
-plt.plot(range(1,N+1),analyticalList, label = "analytical")
-plt.plot(range(1,N+1),approxList, label="approx")
+# Convergence for different volatility values
+volList = np.linspace(0.05,0.6,6)
+for vol in volList:
+    # errorList = []
+    analyticalList = []
+    approxList = []
+    for n in range(1,N+1):
+        treeN = buildTree(S, vol, T, n)
+        priceApproximatedly = valueOptionMatrix(treeN, T, r, K, vol, n)[0,0]
+        optionPriceAnalytical = black_scholes(vol, S, T, K, r)
+
+        # errorList.append(optionPriceAnalytical- priceApproximatedly)
+        analyticalList.append(optionPriceAnalytical)
+        approxList.append(priceApproximatedly)
+
+    plt.plot(range(1,N+1),analyticalList)
+    plt.plot(range(1,N+1),approxList, label="approx "+str(round(vol,2)))
 plt.xlabel("N")
 plt.ylabel("Value")
-plt.legend()
+plt.legend(loc=1)
 plt.show()
 
+# Volatility vs error
+volList = np.linspace(0.1,0.6,6)
+errorList = []
+for vol in volList:
+    
+    treeN = buildTree(S, vol, T, n)
+    priceApproximatedly = valueOptionMatrix(treeN, T, r, K, vol, n)[0,0]
+    optionPriceAnalytical = black_scholes(vol, S, T, K, r)
+    errorList.append(optionPriceAnalytical- priceApproximatedly)
+
+plt.plot(range(1,N+1),errorList,label="error "+str(round(vol,2)))
+plt.xlabel("N")
+plt.ylabel("Value")
+plt.legend(loc=1)
+plt.show()
+#%%
+""" 
+Part 1.3: Study convergence N
+# """
+NList = np.linspace(50,200,4)
+for N in NList:
+    N = int(N)
+    analyticalList = []
+    approxList = []
+    for n in range(1,N+1):
+        treeN = buildTree(S, vol, T, n)
+        priceApproximatedly = valueOptionMatrix(treeN, T, r, K, vol, n)[0,0]
+        optionPriceAnalytical = black_scholes(vol, S, T, K, r)
+
+        # errorList.append(optionPriceAnalytical- priceApproximatedly)
+        analyticalList.append(optionPriceAnalytical)
+        approxList.append(priceApproximatedly)
+
+    plt.plot(range(1,N+1),analyticalList)
+    plt.plot(range(1,N+1),approxList, label="N "+str(round(N,2)))
+    plt.xlabel("N")
+    plt.ylabel("Value")
+    plt.legend(loc=1)
+    plt.show()
+
+# Computational complexity for the binomial tree is 1/2*N^2 looking at the
+# for loops presented in the buildTree() function
+
+"""
+Part 1.4: Delta parameter
+"""
+# When C is derived over S the only term standing is N(d_1)
+# See finance paper page 9 --> Full derivation still needed
+
+#%%
+"""
+Part 1.5: Compute hedge parameter
+"""
+N = 50
+
+delta_error_list = []
+volList = np.linspace(0.1,10,100)
+for vol in volList:
+    treeN = buildTree(S, vol, T, N)
+    delta_S = treeN[1,0]-treeN[1,1]
+
+    priceApproximatedly = valueOptionMatrix(treeN, T, r, K, vol, N)
+    delta_f = priceApproximatedly[1,0]-priceApproximatedly[1,1]
+    delta_binom = delta_f / delta_S
+    delta_bs = N_func(((np.log(S/K) + (r+0.5*vol**2)*T)/(vol*T**0.5))-vol*T**0.5)
+
+    delta_error_list.append(abs(delta_binom-delta_bs))
+
+plt.plot(volList,delta_error_list)
+plt.xlabel("Volatility")
+plt.ylabel("Error")
+
+#%%
+"""
+Part 1.6: American instead of European
+"""
+S = 50
+T = 2
+r = 0.05
+K = 52
+vol = 0.2
+N = 2
+dt = T/N
+
+u = np.exp(vol * np.sqrt(dt))
+d = np.exp(-vol * np.sqrt(dt))
+p = (np.exp(r*dt)-d)/(u-d)
+print(u,d,p)
+print(u*d)
+
+treeN = buildTree(S, vol, T, N)
+
+print(treeN)
+approx_matrix = valueOptionMatrix(treeN, T, r, K, vol, N, option="Put", type_option="European")
+
+print(approx_matrix)
+# %%
