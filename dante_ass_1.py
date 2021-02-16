@@ -7,6 +7,9 @@ import numpy as np
 np.set_printoptions(threshold=sys.maxsize)
 import matplotlib.pyplot as plt
 from scipy.stats import norm
+from numpy.random import MT19937
+from numpy.random import RandomState, SeedSequence
+rs = RandomState(MT19937(SeedSequence(123456789)))
 
 #%%
 """ 
@@ -88,6 +91,7 @@ def black_scholes(vol, S, T, K, r):
 
 # Convergence for different volatility values
 volList = np.linspace(0.05,0.6,6)
+N = 50
 for vol in volList:
     # errorList = []
     analyticalList = []
@@ -112,13 +116,12 @@ plt.show()
 volList = np.linspace(0.1,0.6,6)
 errorList = []
 for vol in volList:
-    
-    treeN = buildTree(S, vol, T, n)
-    priceApproximatedly = valueOptionMatrix(treeN, T, r, K, vol, n)[0,0]
+    treeN = buildTree(S, vol, T, N)
+    priceApproximatedly = valueOptionMatrix(treeN, T, r, K, vol, N)[0,0]
     optionPriceAnalytical = black_scholes(vol, S, T, K, r)
     errorList.append(optionPriceAnalytical- priceApproximatedly)
 
-plt.plot(range(1,N+1),errorList,label="error "+str(round(vol,2)))
+plt.plot(volList,errorList,label="error "+str(round(vol,2)))
 plt.xlabel("N")
 plt.ylabel("Value")
 plt.legend(loc=1)
@@ -127,29 +130,27 @@ plt.show()
 """ 
 Part 1.3: Study convergence N
 # """
-NList = np.linspace(50,200,4)
-for N in NList:
-    N = int(N)
-    analyticalList = []
-    approxList = []
-    for n in range(1,N+1):
-        treeN = buildTree(S, vol, T, n)
-        priceApproximatedly = valueOptionMatrix(treeN, T, r, K, vol, n)[0,0]
-        optionPriceAnalytical = black_scholes(vol, S, T, K, r)
+N = 200
+analyticalList = []
+approxList = []
+for n in range(1,N+1):
+    treeN = buildTree(S, vol, T, n)
+    priceApproximatedly = valueOptionMatrix(treeN, T, r, K, vol, n)[0,0]
+    optionPriceAnalytical = black_scholes(vol, S, T, K, r)
 
-        # errorList.append(optionPriceAnalytical- priceApproximatedly)
-        analyticalList.append(optionPriceAnalytical)
-        approxList.append(priceApproximatedly)
+    # errorList.append(optionPriceAnalytical- priceApproximatedly)
+    analyticalList.append(optionPriceAnalytical)
+    approxList.append(priceApproximatedly)
 
-    plt.plot(range(1,N+1),analyticalList)
-    plt.plot(range(1,N+1),approxList, label="N "+str(round(N,2)))
-    plt.xlabel("N")
-    plt.ylabel("Value")
-    plt.legend(loc=1)
-    plt.show()
+plt.plot(range(1,N+1),analyticalList)
+plt.plot(range(1,N+1),approxList, label="N "+str(round(N,2)))
+plt.xlabel("N")
+plt.ylabel("Value")
+plt.legend(loc=1)
+plt.show()
 
 # Computational complexity for the binomial tree is 1/2*N^2 looking at the
-# for loops presented in the buildTree() function
+# for loops presented in the buildTree() function --> O(N^2)
 
 """
 Part 1.4: Delta parameter
@@ -172,7 +173,8 @@ for vol in volList:
     priceApproximatedly = valueOptionMatrix(treeN, T, r, K, vol, N)
     delta_f = priceApproximatedly[1,0]-priceApproximatedly[1,1]
     delta_binom = delta_f / delta_S
-    delta_bs = N_func(((np.log(S/K) + (r+0.5*vol**2)*T)/(vol*T**0.5))-vol*T**0.5)
+    # delta_bs = N_func(((np.log(S/K) + (r-0.5*vol**2)*T)/(vol*T**0.5))+vol*T**0.5)
+    delta_bs = N_func(((np.log(S/K) + (r+0.5*vol**2)*T)/(vol*T**0.5))) # Which one is correct? 
 
     delta_error_list.append(abs(delta_binom-delta_bs))
 
@@ -190,18 +192,82 @@ r = 0.05
 K = 52
 vol = 0.2
 N = 2
-dt = T/N
-
-u = np.exp(vol * np.sqrt(dt))
-d = np.exp(-vol * np.sqrt(dt))
-p = (np.exp(r*dt)-d)/(u-d)
-print(u,d,p)
-print(u*d)
 
 treeN = buildTree(S, vol, T, N)
-
-print(treeN)
 approx_matrix = valueOptionMatrix(treeN, T, r, K, vol, N, option="Put", type_option="European")
+print("European Put:",approx_matrix[0,0])
 
-print(approx_matrix)
+treeN = buildTree(S, vol, T, N)
+approx_matrix = valueOptionMatrix(treeN, T, r, K, vol, N, option="Call", type_option="European")
+print("European Call:",approx_matrix[0,0])
+
+treeN = buildTree(S, vol, T, N)
+approx_matrix = valueOptionMatrix(treeN, T, r, K, vol, N, option="Put", type_option="American")
+print("American Put:",approx_matrix[0,0])
+
+treeN = buildTree(S, vol, T, N)
+approx_matrix = valueOptionMatrix(treeN, T, r, K, vol, N, option="Call", type_option="American")
+print("American Call:",approx_matrix[0,0])
+
+# %%
+"""
+Part 2.1: Derive risk neutral pricing formula
+"""
+# Derivation is in send pdf
+#%%
+"""
+Part 2.2: Euler method to perform a hedging simulation
+"""
+
+vol = 0.2
+K = 99
+S = 100
+r = 0.06
+N = 365
+T = 1
+# Frequency is between daily and weekly
+
+def exactMethod(S,T,N,r,vol):
+    dt = T/N
+    S_list = [S]
+    Sm = S
+    for _ in range(N):
+        Zm = np.random.normal()
+        Snext = Sm * np.exp((r-0.5*(vol**2))*dt+vol*(dt**0.5)*Zm)
+        Sm = Snext
+        S_list.append(Sm)
+    return S_list
+
+def eulerApproxMethod(S,T,N,r,vol,hedge="daily"):
+    dt = T/N
+    S_list = [S]
+    Sm = S
+    for n in range(N):
+        Zm = np.random.normal()
+        if hedge == "weekly" and n % 7 == 0:
+            Snext = Sm + r*Sm*dt + vol*Sm*(dt**0.5)*Zm
+            Sm = Snext
+            S_list.append(Sm)
+        elif hedge == "daily":
+            Snext = Sm + r*Sm*dt + vol*Sm*(dt**0.5)*Zm
+            Sm = Snext
+            S_list.append(Sm)
+    return S_list
+
+np.random.seed(42)
+exactList = exactMethod(S,T,N,r,vol)
+x = np.linspace(0,365,N+1)
+plt.plot(x,exactList)
+
+np.random.seed(42)
+approxList = eulerApproxMethod(S,T,N,r,vol)
+x = np.linspace(0,365,N+1)
+plt.plot(x,approxList)
+
+np.random.seed(42)
+approxList = eulerApproxMethod(S,T,N,r,vol,hedge="weekly")
+x = np.linspace(0,365,len(approxList))
+plt.plot(x,approxList)
+
+
 # %%
