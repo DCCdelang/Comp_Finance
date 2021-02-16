@@ -59,14 +59,16 @@ def valueOptionMatrix( tree , T, r , K, sigma,N ) :
 
 
 
-sigmas = np.linspace(0.05, 0.95, 19)
+sigmas = np.linspace(0.05, 1, 20)
+Ns = np.linspace(5,100,20)
 sigma = 0.2
-S = 99
-T = 1.
+S = 50
+T = 2.
 N = 50
-K = 100
-r = 0.06
-
+K = 52
+r = 0.05
+# print(buildTree(S,sigma,T,N))
+# raise ValueError()
 
 def N_(x):
     #'Cumulative distribution function for the standard normal distribution'
@@ -120,5 +122,45 @@ def sigma_change(S,N,T,sigmas,r,K):
 
     plt.show()
 
-sigma_change(S,N,T,sigmas,r,K)
+
+def N_change(S,Ns,T,sigmas,r,K):
+    y_ = []
+
+    for N in Ns:
+        # Calculate the option price for the correct parameters
+        optionPriceAnalytical = black_scholes(S,N,T,sigma,r,K)
+        print(N)
+        
+        # calculate option price for each n in N
+        for n in range(1, int(N)):
+            print(sigma)
+            treeN = buildTree(S,sigma,T,n) 
+            priceApproximatedly = valueOptionMatrix(treeN,T,r,K,sigma,n)[0][0]
+        y_.append(abs(priceApproximatedly - optionPriceAnalytical))
+    plt.plot(Ns, y_)
+
+
+    plt.show()
+l = []
+for sigma in sigmas:
+    tree = buildTree(S,sigma,T,N)
+    low = tree[-1, 0]
+    high = tree[-1, -1]
+    options = valueOptionMatrix( tree , T, r , K, sigma,N )
+    low_option = options[-1,0]
+    high_option = options[-1,-1]
+
+    delta = (high_option - low_option)/(high - low)
+    d = ((np.log(S/K) + ((r-(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
+    d_1 = d + sigma* np.sqrt(T)
+    d_s = N_(d)
+    delta
+    l.append(abs(delta - d_s))
+# plt.plot(sigmas, l)
+# plt.show()
+
+
+# raise ValueError()
+# sigma_change(S,N,T,sigmas,r,K)
 convergence(S,N,T,sigma,r,K)
+# N_change(S,Ns,T,sigmas,r,K)
