@@ -1,18 +1,17 @@
+#%%
 import numpy as np
 import matplotlib.pyplot as plt
+from math import *
+from scipy.stats import norm
 
-def buildTree(S, vol , T, N): 
+def buildTree(S, sigma , T, N): 
     dt = T / N
     matrix = np.zeros((N + 1, N + 1))
-    u = np.exp(vol*np.sqrt(dt))
-    d = np.exp(-vol*np.sqrt(dt))
-# Iterate over the lower triangle
+    u = np.exp(sigma*np.sqrt(dt))
+    d = np.exp(-sigma*np.sqrt(dt))
 
     for i in np.arange(N + 1): # iterate over rows
         for j in np.arange(i + 1): # iterate over columns
-
-# Hint: express each cell as a combination of up
-# and down moves 
             matrix[i, j]=S * d**(i-j) * u**(j)
     return matrix
 
@@ -23,10 +22,11 @@ def buildTree(S, vol , T, N):
 #tree = buildTree(S, sigma, T, N)
 #print(tree)
 
-def valueOptionMatrix(tree , T, r , K, vol, N, option = "call"):
+def valueOptionMatrix(S, T, r , K, sigma, N, option = "call"):
+    tree = buildTree(S, sigma, T, N)
     dt = T / N
-    u = np.exp(vol*np.sqrt(dt))
-    d = np.exp(-vol*np.sqrt(dt))
+    u = np.exp(sigma*np.sqrt(dt))
+    d = np.exp(-sigma*np.sqrt(dt))
     p = (np.exp(r*dt) - d)/(u - d)
     columns = tree.shape[1] 
     rows = tree.shape[0]
@@ -48,35 +48,118 @@ def valueOptionMatrix(tree , T, r , K, vol, N, option = "call"):
             tree[i,j] = (p*up + (1-p)*down) * np.exp(-r*dt)
     return tree
 
+
 sigma = 0.2
-S = 100 
-T=1.
-N=2
-K = 99 
-r = 0.06
-tree = buildTree(S, sigma, T, N) 
+S = 50
+T=2.
+K = 52 
+r = 0.05
+N = 2
+#tree = valueOptionMatrix ( tree , T, r , K, sigma , N)
 #print(tree)
-tree2 = valueOptionMatrix ( tree , T, r , K, sigma , N)
-#print(tree2)
 
 
-# Play around with different ranges of N and step sizes . 
-N = 300
-# Calculate the option price for the correct parameters 
-# optionPriceAnalytical = np.exp(r*T) * S
-optionPriceAnalytical = K-S # black-schioe
-list_anal = [] 
-list_approx = []
-# calculate option price for each n in N 
-for n in range(1,N):
-    treeN = buildTree(S, sigma, T, n) 
-    priceApproximatedly = valueOptionMatrix ( treeN , T, r , K, sigma, n )
-    list_anal.append(optionPriceAnalytical)
-    list_approx.append(priceApproximatedly[0,0])
-# use matplotlib to plot the analytical value 
-# and the approximated value for each n
+### 1.2: Calculate the option price in the analytical and approximated way for different values
+#        of volatility
+def black_scholes(S,N,T,sigma,r,K):
+    d = ((np.log(S/K) + ((r-(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
+    d_1 = d + sigma* np.sqrt(T)
+    return (S*norm.cdf(d_1)) - (K*np.exp(-r*T)*norm.cdf(d))
 
-#plt.plot(range(1,N), list_anal, label = "Analytical")
-plt.plot(range(1,N), list_approx, label = "Approximatedly" )
-plt.legend()
+sigma_list = np.linspace(0.01, 10, 400)
+S = 99
+T=1.
+K = 100 
+r = 0.06
+N = 50
+error = []
+
+for sigma in sigma_list:
+    list_anal = [] 
+    list_approx = []
+    optionPriceAnalytical = black_scholes(S, N, T, sigma, r, K)
+    for n in range(1,N+1):
+        priceApproximatedly = valueOptionMatrix (S, T, r , K, sigma, n )
+        list_anal.append(optionPriceAnalytical)
+        list_approx.append(priceApproximatedly[0,0])
+    error.append(abs(list_anal[-1]-list_approx[-1]))
+
+plt.plot(sigma_list, error)
+plt.xlabel("volatility")
+plt.ylabel("Option error")
 plt.show()
+"""
+
+    plt.plot(range(1,N), list_anal, label = "Analytical")
+    plt.plot(range(1,N), list_approx, label = "Approximatedly" )
+    plt.text(45, 11.55, f"$\sigma$ = {sigma}")
+    plt.legend()
+    plt.show()
+"""
+
+
+### 1.3: convergence of the method for increasing number of steps in the tree
+S = 99
+T=1.
+K = 100 
+r = 0.06
+N = 50
+sigma = 0.2
+error = []
+
+
+for n in range(1,N):
+    priceApproximatedly = valueOptionMatrix(S, T, r , K, sigma, n )
+    anal = black_scholes(S, N, T, sigma, r, K)
+    approx = priceApproximatedly[0,0]
+    error.append(abs(anal-approx))
+
+plt.plot(range(1,N), error)
+plt.xlabel("N")
+plt.ylabel("error")
+plt.show()
+
+# computational complexity
+n = np.linspace(1,N, N-1)
+plt.plot(n, 1/2*n**2)
+plt.xlabel("N")
+plt.ylabel("computational complexity")
+plt.show()
+
+# %%
+### Comparison for delta
+def calc_delta(S, T, r , K, sigma, N, option = "call"):
+    dt = T / N
+    u = np.exp(sigma*np.sqrt(dt))
+    d = np.exp(-sigma*np.sqrt(dt))
+    p = (np.exp(r*dt) - d)/(u - d)
+    tree_payoff = valueOptionMatrix(S, T, r , K, sigma, N, option)
+    delta = (tree_payoff[1, 1]- tree_payoff[1,0])/(S*u-S*d)
+    #print(delta)
+    #if (option == "call" & delta < 0):
+    #    print("Something went wrong, delta should be positive")
+    #if (option == "put" & delta > 0):
+    #    print("Something went wrong, delta should be negative")
+    
+    return delta
+
+sigma_list = np.linspace(0.05, 10, 400)
+S = 99
+T=1.
+K = 100 
+r = 0.06
+N = 50
+error = []
+
+for sigma in sigma_list:
+    delta = calc_delta(S, T, r , K, sigma, N, option = "call")
+    d = ((np.log(S/K) + ((r+(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
+    d_1 = d - sigma* np.sqrt(T)
+    delta_BS = norm.cdf(d_1)
+    error.append(abs(delta-delta_BS))
+#print(error)
+plt.plot(sigma_list, error)
+plt.xlabel("volatility")
+plt.ylabel("Delta error")
+plt.show()
+# %%
