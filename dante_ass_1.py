@@ -113,17 +113,17 @@ plt.legend(loc=1)
 plt.show()
 
 # Volatility vs error
-volList = np.linspace(0.1,0.6,6)
+volList = np.linspace(0.01,1,400)
 errorList = []
 for vol in volList:
     treeN = buildTree(S, vol, T, N)
     priceApproximatedly = valueOptionMatrix(treeN, T, r, K, vol, N)[0,0]
     optionPriceAnalytical = black_scholes(vol, S, T, K, r)
-    errorList.append(optionPriceAnalytical- priceApproximatedly)
+    errorList.append(abs(optionPriceAnalytical- priceApproximatedly))
 
 plt.plot(volList,errorList,label="error "+str(round(vol,2)))
-plt.xlabel("N")
-plt.ylabel("Value")
+plt.xlabel("Volatility")
+plt.ylabel("Error")
 plt.legend(loc=1)
 plt.show()
 #%%
@@ -173,14 +173,14 @@ for vol in volList:
     priceApproximatedly = valueOptionMatrix(treeN, T, r, K, vol, N)
     delta_f = priceApproximatedly[1,0]-priceApproximatedly[1,1]
     delta_binom = delta_f / delta_S
-    # delta_bs = N_func(((np.log(S/K) + (r-0.5*vol**2)*T)/(vol*T**0.5))+vol*T**0.5)
-    delta_bs = N_func(((np.log(S/K) + (r+0.5*vol**2)*T)/(vol*T**0.5))) # Which one is correct? 
+    delta_bs = N_func(((np.log(S/K) + (r+0.5*vol**2)*T)/(vol*T**0.5))-vol*T**0.5) # Which one is correct? 
 
     delta_error_list.append(abs(delta_binom-delta_bs))
 
 plt.plot(volList,delta_error_list)
 plt.xlabel("Volatility")
 plt.ylabel("Error")
+plt.show()
 
 #%%
 """
@@ -238,36 +238,35 @@ def exactMethod(S,T,N,r,vol):
         S_list.append(Sm)
     return S_list
 
-def eulerApproxMethod(S,T,N,r,vol,hedge="daily"):
+def eulerApproxMethod(S,T,N,M,r,vol):
     dt = T/N
-    S_list = [S]
-    Sm = S
+    S_list = []
+    S_list1 = []
+    Sm, Sm1 = S, S
     for n in range(N):
         Zm = np.random.normal()
-        if hedge == "weekly" and n % 7 == 0:
-            Snext = Sm + r*Sm*dt + vol*Sm*(dt**0.5)*Zm
-            Sm = Snext
+        Snext = Sm + r*Sm*dt + vol*Sm*(dt**0.5)*Zm
+        Sm = Snext
+        if n % M == 0:
             S_list.append(Sm)
-        elif hedge == "daily":
-            Snext = Sm + r*Sm*dt + vol*Sm*(dt**0.5)*Zm
-            Sm = Snext
-            S_list.append(Sm)
-    return S_list
+        else:
+            S_list1.append(Sm)
+    return S_list, S_list1
 
-np.random.seed(42)
+np.random.seed(420)
 exactList = exactMethod(S,T,N,r,vol)
 x = np.linspace(0,365,N+1)
-plt.plot(x,exactList)
+# plt.plot(x,exactList)
 
-np.random.seed(42)
-approxList = eulerApproxMethod(S,T,N,r,vol)
-x = np.linspace(0,365,N+1)
-plt.plot(x,approxList)
+np.random.seed(420)
+M = 21
+approxList1,approxList2 = eulerApproxMethod(S,T,N,M,r,vol)
 
-np.random.seed(42)
-approxList = eulerApproxMethod(S,T,N,r,vol,hedge="weekly")
-x = np.linspace(0,365,len(approxList))
-plt.plot(x,approxList)
+x = np.linspace(0,365,len(approxList1))
+plt.plot(x,approxList1)
 
+x = np.linspace(0,365,len(approxList2))
+plt.plot(x,approxList2)
+plt.show()
 
 # %%
