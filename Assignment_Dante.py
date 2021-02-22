@@ -186,7 +186,7 @@ Part 1.5: Compute hedge parameter
 N = 50
 
 delta_error_list,delta_bs_list, delta_binom_list = [],[],[]
-volList = np.linspace(0.01,1,100)
+volList = np.linspace(0.01,10,100)
 for vol in volList:
     treeN = buildTree(S, vol, T, N)
     delta_S = treeN[1,0]-treeN[1,1]
@@ -206,6 +206,10 @@ plt.plot(volList,delta_binom_list,label="binom")
 plt.xlabel("Volatility")
 plt.ylabel("Fraction")
 plt.legend()
+plt.show()
+plt.plot(volList,delta_error_list)
+plt.xlabel("Volatility")
+plt.ylabel("Error")
 plt.show()
 
 #%%
@@ -331,9 +335,9 @@ plt.plot(x,exactList,label="Exact")
 vol = 0.1
 np.random.seed(42)
 M = 21
-# approxList1,approxList2 = eulerApproxMethod(S,T,N,M,r,vol)
-# x = np.linspace(0,365,len(approxList2))
-# plt.plot(x,approxList2,label=f"Vol={round(vol,2)}")
+approxList1,approxList2 = eulerApproxMethod(S,T,N,M,r,vol)
+x = np.linspace(0,365,len(approxList2))
+plt.plot(x,approxList2,label=f"Vol={round(vol,2)}")
 
 volList = [0.5,1,2,4.5]
 for vol in volList:

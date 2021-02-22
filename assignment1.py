@@ -23,9 +23,6 @@ def buildTree(S,sigma,T,N):
     # print(matrix)        
     return matrix
 
-
-
-
 def valueOptionMatrix( tree , T, r , K, sigma,N ) :
     dt = T / N
     u = np.exp(sigma * np.sqrt(dt))
@@ -59,14 +56,14 @@ def valueOptionMatrix( tree , T, r , K, sigma,N ) :
 
 
 
-sigmas = np.linspace(0.05, 1, 20)
-Ns = np.linspace(5,100,20)
+sigmas = np.linspace(0.01, 10, 200)
+Ns = np.linspace(5,50,10)
 sigma = 0.2
-S = 50
-T = 2.
+S = 99
+T = 1.
 N = 50
-K = 52
-r = 0.05
+K = 100
+r = 0.06
 # print(buildTree(S,sigma,T,N))
 # raise ValueError()
 
@@ -105,19 +102,25 @@ def convergence(S,N,T,sigma,r,K):
 
 def sigma_change(S,N,T,sigmas,r,K):
     y_ = []
-
+    an = []
+    bi = []
     for sigma in sigmas:
         # Calculate the option price for the correct parameters
         optionPriceAnalytical = black_scholes(S,N,T,sigma,r,K)
-        print(sigma)
         
         # calculate option price for each n in N
-        for n in range(1, N):
-            print(sigma)
-            treeN = buildTree(S,sigma,T,n) 
-            priceApproximatedly = valueOptionMatrix(treeN,T,r,K,sigma,n)[0][0]
-        y_.append(abs(priceApproximatedly - optionPriceAnalytical))
+
+        treeN = buildTree(S,sigma,T,N) 
+        priceApproximatedly = valueOptionMatrix(treeN,T,r,K,sigma,N)[0][0]
+        y_.append(abs(optionPriceAnalytical - priceApproximatedly ))
+        an.append(optionPriceAnalytical)
+        bi.append(priceApproximatedly)
+    plt.plot(sigmas, an, label="an")
+    plt.plot(sigmas, bi, label = "bi")
+
     plt.plot(sigmas, y_)
+    # plt.yscale('log')
+    plt.legend()
 
 
     plt.show()
@@ -133,34 +136,63 @@ def N_change(S,Ns,T,sigmas,r,K):
         
         # calculate option price for each n in N
         for n in range(1, int(N)):
-            print(sigma)
+            # print(sigma)
             treeN = buildTree(S,sigma,T,n) 
             priceApproximatedly = valueOptionMatrix(treeN,T,r,K,sigma,n)[0][0]
         y_.append(abs(priceApproximatedly - optionPriceAnalytical))
     plt.plot(Ns, y_)
 
-
+    plt.xlabel("N", fontsize=14)
+    plt.ylabel("Error", fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.xticks(fontsize=14)
+    plt.tight_layout()
+    plt.savefig("N_error.pdf")
     plt.show()
-l = []
-for sigma in sigmas:
-    tree = buildTree(S,sigma,T,N)
-    low = tree[-1, 0]
-    high = tree[-1, -1]
-    options = valueOptionMatrix( tree , T, r , K, sigma,N )
-    low_option = options[-1,0]
-    high_option = options[-1,-1]
 
-    delta = (high_option - low_option)/(high - low)
-    d = ((np.log(S/K) + ((r-(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
-    d_1 = d + sigma* np.sqrt(T)
-    d_s = N_(d)
-    delta
-    l.append(abs(delta - d_s))
-# plt.plot(sigmas, l)
-# plt.show()
+def Hedge(S,N,T,sigmas,r,K):
+    l = []
+    b = []
+    a = []
+    for sigma in sigmas:
+        tree = buildTree(S,sigma,T,N)
+        low = tree[1, 0]
+        high = tree[1, 1]
+        # print(high, low)
+        options = valueOptionMatrix( tree , T, r , K, sigma,N )
+        low_option = options[1,0]
+        high_option = options[1,1]
+
+        delta = (high_option - low_option)/(high - low)
+        d = ((np.log(S/K) + ((r+(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
+        d_1 = d - sigma* np.sqrt(T)
+        d_s = N_(d)
+        a.append(d_s)
+        b.append(delta)
+        l.append(abs(delta - d_s))
+    plt.plot(sigmas, a, label="Black-Scholes")
+    plt.plot(sigmas,b,"--", label="Binomial")
+    plt.xlabel("Volatility", fontsize=14)
+    plt.ylabel("Fraction", fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.xticks(fontsize=14)
+    plt.legend(fontsize=14)
+    plt.savefig("Hedge_parameter.pdf")
+    plt.show()
+    plt.plot(sigmas, l)
+    plt.xlabel("Volatility", fontsize=14)
+    plt.ylabel("Difference", fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.xticks(fontsize=14)
+    # plt.legend(fontsize=14)
+    plt.tight_layout()
+    plt.savefig("Hedge_difference.pdf")
+    plt.show()
+
 
 
 # raise ValueError()
+# Hedge(S,N,T,sigmas,r,K)
 # sigma_change(S,N,T,sigmas,r,K)
-convergence(S,N,T,sigma,r,K)
-# N_change(S,Ns,T,sigmas,r,K)
+# convergence(S,N,T,sigma,r,K)
+# N_change(S,Ns,T,0.2,r,K)
