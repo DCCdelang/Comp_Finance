@@ -2,6 +2,7 @@
 Repository for assignments made during the Computational Finance course 2021 at UvA.
 
 ## Authors
+Group 15:
 Caterina Buranelli
 Kamiel Gulpen
 Dante de Lang
