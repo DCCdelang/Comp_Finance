@@ -229,7 +229,7 @@ N = 50
 # approx_matrix = valueOptionMatrix(treeN, T, r, K, vol, N, option="Put", type_option="European")
 # print("European Put:",approx_matrix[0,0])
 
-volList = np.linspace(0.01, 10, 50)
+volList = [0.2]
 ep, ec, ap, ac = [],[],[],[]
 for vol in volList:
     treeN = buildTree(S, vol, T, N)
@@ -240,7 +240,8 @@ for vol in volList:
     ap.append(valueOptionMatrix(treeN, T, r, K, vol, N, option="Put", type_option="American")[0,0])
     treeN = buildTree(S, vol, T, N)
     ac.append(valueOptionMatrix(treeN, T, r, K, vol, N, option="Call", type_option="American")[0,0])
-
+print(ep)
+raise ValueError()
 plt.plot(volList,ep,label="EU-Put")
 plt.plot(volList,ec,label="EU-Call")
 plt.plot(volList,ap,"--",label="AM-Put")

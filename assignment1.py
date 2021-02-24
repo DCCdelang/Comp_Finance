@@ -1,7 +1,9 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from math import *
 from scipy.stats import norm
+import seaborn as sns
 
 
 def buildTree(S,sigma,T,N):
@@ -59,10 +61,10 @@ def valueOptionMatrix( tree , T, r , K, sigma,N ) :
 sigmas = np.linspace(0.01, 10, 200)
 Ns = np.linspace(5,50,10)
 sigma = 0.2
-S = 99
+S = 100
 T = 1.
 N = 50
-K = 100
+K = 99
 r = 0.06
 # print(buildTree(S,sigma,T,N))
 # raise ValueError()
@@ -189,6 +191,80 @@ def Hedge(S,N,T,sigmas,r,K):
     plt.savefig("Hedge_difference.pdf")
     plt.show()
 
+
+def exactMethod(S,T,N,r,vol):
+    dt = T/N
+    S_list = [S]
+    Sm = S
+    for _ in range(N):
+        Zm = np.random.normal()
+        Snext = Sm * np.exp((r-0.5*(vol**2))*dt+vol*(dt**0.5)*Zm)
+        Sm = Snext
+        S_list.append(Sm)
+    return S_list
+
+def eulerApproxMethod(S,T,N,r,vol,hedge="both"):
+    dt = T/N
+    A = []
+    B = []
+    S_list = [S]
+    Sm = S
+    for n in range(N):
+        Zm = np.random.normal()
+        if n % 7 == 0:
+            Snext = Sm + r*Sm*dt + vol*Sm*(dt**0.5)*Zm
+            Sm = Snext
+            A.append(Sm)
+            B.append(Sm)
+        else:
+            Snext = Sm + r*Sm*dt + vol*Sm*(dt**0.5)*Zm
+            Sm = Snext
+            B.append(Sm)
+    return A, B
+
+
+
+time = []
+value = []
+
+
+# exactList = exactMethod(S,T,N,r,vol)
+# x = np.linspace(0,365,N+1)
+# plt.plot(x,exactList, label="Exact")
+
+# for i in range(10):
+#     approxList = eulerApproxMethod(S,T,N,r,sigma)[1]
+#     count = 0
+#     for i in approxList:
+#         value.append(i)
+#         time.append(count)
+#         count +=1
+for i in range(1000000):
+    approxList = eulerApproxMethod(S,T,N,r,sigma)[1][-1]
+    count = 0
+    value.append(approxList)
+    time.append(count)
+    count +=1
+
+data = {"Values":value}
+df = pd.DataFrame(data) 
+
+sns.histplot(df, x="Values", kde=True)
+
+# sns.lineplot(data=df, x="Time", y="Values")
+
+plt.show()
+# approxList = eulerApproxMethod(S,T,N,r,vol)[0]
+# x = np.linspace(0,365,len(approxList))
+# plt.plot(x,approxList,":" ,label="Euler-weekly")
+# plt.xticks(fontsize=14)
+# plt.yticks(fontsize=14)
+# plt.xlabel("Time", fontsize=14)
+# plt.ylabel("Stock price", fontsize=14)
+# plt.legend(fontsize=14)
+# plt.savefig("Eurler_same_vol.pdf")
+
+plt.show()
 
 
 # raise ValueError()
