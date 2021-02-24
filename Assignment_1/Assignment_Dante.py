@@ -85,10 +85,10 @@ Part 1.2: Comparison of option price approximation to black scholes, different
 volatilities.
 """
 
-S = 99
+S = 100
 T = 1
 r = 0.06
-K = 100
+K = 99
 vol = 0.2
 N = 50
 
@@ -216,10 +216,10 @@ plt.show()
 """
 Part 1.6: American instead of European
 """
-S = 99
+S = 100
 T = 1
 r = 0.06
-K = 100
+K = 99
 vol = 0.2
 N = 50
 
