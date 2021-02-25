@@ -58,7 +58,7 @@ value = []
 time = []
 n = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
 
-for i in range(10):
+for i in range(100):
     for N in list(n):
         for i in range(int(N)):
             approxList = ST(K, S, r, sigma, T)
@@ -71,7 +71,7 @@ for i in range(10):
 # plt.plot(n, option_prices)
 data = {"Values":option_prices, "Time":time}
 df = pd.DataFrame(data) 
-
+df.to_csv(f"Monte_carlo.csv")
 sns.lineplot(data=df, x="Time", y="Values")
 plt.xscale("log") 
 plt.savefig("Convergence_option_price.pdf")
@@ -106,9 +106,9 @@ plt.show()
 option_prices = []
 
 time = []
-Ks = [98, 99, 100, 101, 102]
+Ks = np.linspace(80, 120, 10)
 
-for K in Ks:
+for K in list(Ks):
     value = []
     for i in range(1000000):
         approxList = ST(K, S, r, sigma, T)
