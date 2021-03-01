@@ -3,15 +3,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from math import *
-from scipy.stats import norm
+from scipy.stats import norm, gmean
 import seaborn as sns
 
-K = 99
-S = 100
-r = 0.06
-sigma = 0.2
-T = 1
-N = 50
 #%%
 
 def option_price(K, S, r, sigma, T, pay_offs):
@@ -43,36 +37,46 @@ def black_scholes_p(S,N,T,sigma,r,K):
 
 def asian_anal(S,N,T,sigma,r,K):
     sigma_tilde = sigma * sqrt((2*N+1)/(6*(N+1)))
-    r_tilde = ((r-sigma/2)+sigma_tilde)/2
+    r_tilde = ((r-sigma**2/2)+sigma_tilde**2)/2
 
     d_tilde_1 = ((np.log(S/K) + ((r_tilde+(sigma_tilde**2)/2)) * T )/(sigma_tilde*np.sqrt(T)))
     d_tilde_2 = ((np.log(S/K) + ((r_tilde-(sigma_tilde**2)/2)) * T )/(sigma_tilde*np.sqrt(T)))
 
     return np.exp(-r*T)*(S*np.exp(r_tilde*T)*N_(d_tilde_1)-K*N_(d_tilde_2))
 
-    
 def asian_MC(S,N,T,r,K, n, type = "geometric"):
-    summa = 0
+    payoff = []
+    sim = []
+    #data = {"Values":payoff, "Simulation":sim}
+    #df = pd.DataFrame() 
     for i in range(n):
         S_ti_ar = 0
-        S_ti_geo = 1
+        S_ti_geo = [] 
         if type == "arithmetic":
+            Z = np.random.normal()
             for j in range(N):
-                Z = np.random.normal()
                 T_i = j*T/N
                 ST = S * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
-                S_ti_ar = S_ti_ar + ST
-            summa = summa + max(0, S_ti_ar/(N+1)-K)
+                S_ti_ar.append(ST)
+        
+            payoff.append(max(np.mean(S_ti_ar)-K, 0))
+            sim.append(n)
+
         elif type == "geometric":
+            Z = np.random.normal()
             for j in range(N):
-                Z = np.random.normal()
-                T_i = j*T/N
+                T_i = j * T/N
                 ST = S * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
-                S_ti_geo = S_ti_geo * ST
-                #print(S_ti_geo)
-            summa = summa + max(0, S_ti_geo**(1/(N+1))-K)
-            #print(summa)
-    return np.exp(-r * T) * summa/n
+                S_ti_geo.append(ST)
+
+            payoff.append(max(gmean(S_ti_geo)-K, 0))
+            sim.append(n)
+    
+    data = {"Values":payoff, "Simulation":sim}
+    df = pd.DataFrame(data) 
+    df.to_csv(f"asian_MC_{n}.csv")
+    return np.exp(-r * T) * np.mean(payoff), np.std(payoff)/sqrt(N)
+
 
 #%%
 #### ASIAN OPTION
@@ -81,32 +85,83 @@ S = 100
 r = 0.06
 sigma = 0.2
 T = 1
-N = 50
-n = 10000
+N = 365
+M = n = 1000
 
 asian_anal = asian_anal(S,N,T,sigma,r,K)
 print(asian_anal)
 asian_geom = asian_MC(S,N,T,r,K, n, type = "geometric")
 print(asian_geom)
+asian_chris = Asian_call_MC(M=50,S0=100,K=99,T=1,r=0.06,sigma=0.2)
+print(asian_chris)
 
 #%%
-n = [100, 500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
+nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
+#nn = [100,500, 1000]
 asian_MC_list = []
-for n in range(n):
-    asian_MC = asian_arith(S,N,T,r,K,n)
-    asian_MC_list = asian_MC_list.append(asian_MC)
-    asian_geom_list = asian_geom(S,N,T,sigma,r,K)
+asian_anal_list = []
+standard_error = []
+columns = ["Values", "Simulation"]
+df_final = pd.DataFrame()
+for n in nn:
+    MC = asian_MC(S,N,T,r,K,n,type = "geometric")
+    asian_MC_list.append(MC[0])
+    standard_error.append(MC[1])
+    asian_anal_list.append(asian_anal(S,N,T,sigma,r,K))
 
-plt.plot(n, asian_MC_list, label = "Arithmetic")
-plt.plot(n, asian_geom_list, label = "Geometric")
+frames = [ pd.read_csv(f"asian_MC_{n}.csv") for n in nn ]
+result = pd.concat(frames)
+print(result)
+result.to_csv("asian_MC_final")
+#%%
+"""
+1.1: plot for comparing analytical and MC values
+"""
+df = pd.read_csv("j * T/asian_MC_final")
+sns.lineplot(data=df, x="Simulation", y="Values", label = "Monte Carlo")
+plt.plot(nn, asian_anal_list, label = "Analytical")
+plt.show()
+plt.savefig("Asian_1_2.pdf")
+#df_final.append(df, ignore_index=True)
+#df_final.to_csv(f"asian_MC_final.csv")
+"""
+plt.plot(nn, asian_MC_list, label = "Monte Carlo")
+plt.plot(nn, asian_anal_list, label = "Analytical")
+plt.plot(nn, np.asarray(asian_MC_list) + np.asarray(standard_error))
+plt.plot(nn, np.asarray(asian_MC_list) - np.asarray(standard_error))
 plt.legend()
 plt.show()
+"""
+#plt.xscale("log") 
+#plt.savefig("Convergence_option_price.pdf")
+
+
 #%%
-asian_arith_MC = asian_arith(S,N,T,r,K, m, n)
+"""
+3.3.a: Apply the control variates technique for the calculation of 
+the value of the Asian op- tion based on arithmetic averages.
+"""
+K = 99
+S = 100
+r = 0.06
+sigma = 0.2
+T = 1
+N = 365
+M = n = 1000
+
+asian_arith_MC = asian_MC(S,N,T,r,K, n, type = "arithmetic")
+asian_geom_MC = asian_MC(S,N,T,r,K, n, type = "geometric")
 asian_anal = asian_anal(S,N,T,sigma,r,K)
 asian_cv = asian_arith_MC + asian_anal + asian_geom_MC
-
-
+#%%
+"""
+3.3.b: different parameter settings.
+"""
+# strike
+K = np.linspace(50, 99, 99-50)
+# number of paths
+N = np.linspace(2, 365*2, 365*2-1)
+# number of time points
 
 
 #%%
