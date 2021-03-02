@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from math import *
-from scipy.stats import norm, gmean
+from scipy.stats import norm, gmean, variance
 import seaborn as sns
 
 #%%
@@ -46,13 +46,15 @@ def asian_anal(S,N,T,sigma,r,K):
 
 def asian_MC(S,N,T,r,K, n, type_op = "geometric"):
     payoff = []
+    payoff_a = []
+    payoff_g = []
     sim = []
     #data = {"Values":payoff, "Simulation":sim}
     #df = pd.DataFrame() 
     for i in range(n):
         S_ti_ar = []
         S_ti_geo = []
-        ST = S
+        ST = ST_g = ST_a = S
         T_i = T/N
 
         if type_op == "arithmetic":
@@ -77,11 +79,30 @@ def asian_MC(S,N,T,r,K, n, type_op = "geometric"):
         elif type_op == "control":
             for j in range(N):
                 Z = np.random.normal(0,1)
-                ST = ST * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
-                S_ti_geo.append(ST)
+                
+                ST_g = ST_g * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
+                S_ti_geo.append(ST_g)
+                
+                ST_a = ST_a + (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
+                S_ti_geo.append(ST_a)
 
-            payoff.append(max(gmean(S_ti_geo)-K, 0))            
-    
+            payoff_g.append(max(gmean(S_ti_geo)-K, 0))            
+            payoff_a.append(max(np.mean(S_ti_geo)-K, 0))            
+            sim.append(n)
+
+
+    if type_op == "control":
+
+        control = np.exp(-r * T) * (np.mean(payoff_a)+asian_anal(S,N,T,sigma,r,K)-np.mean(payoff_g))
+        var_contr = np.exp(-r * T)**2 * ( variance(payoff_a) + variance(payoff_g) - 2*np.cov(payoff_a, payoff_g))
+        var_MC = variance(payoff_a)
+        data = {"Values":payoff, "Simulation":sim}
+        df = pd.DataFrame(data) 
+        df.to_csv(f"asian_MC_{n}.csv")
+
+        return control, var_contr, np.exp(-r * T) * (np.mean(payoff_a)), var_MC
+
+
     data = {"Values":payoff, "Simulation":sim}
     df = pd.DataFrame(data) 
     df.to_csv(f"asian_MC_{n}.csv")
@@ -122,7 +143,7 @@ print(anal, geom)
 #%%
 nn = [100,500, 1000,5000]
 #nn = [100,500, 1000]
-=======
+
 asian_analytical = asian_anal(S,N,T,sigma,r,K)
 print(asian_analytical)
 asian_geom = asian_MC(S,N,T,r,K, n, type_op = "geometric")
@@ -146,7 +167,8 @@ for n in nn:
     asian_chris.append(Asian_call_MC(M=n,S0=100,K=99,T=1,r=0.06,sigma=0.2))
     asian_anal_list.append(asian_anal(S,N,T,sigma,r,K))
 
-frames = [ pd.read_csv(f"asian_MC_{n}.csv") for n in nn ]
+#%%
+frames = [ pd.read_csv(f"correct_asian_MC/asian_MC_{n}.csv") for n in nn ]
 result = pd.concat(frames)
 print(result)
 result.to_csv("asian_MC_final")
@@ -157,7 +179,7 @@ result.to_csv("asian_MC_final")
 #df = pd.read_csv("jToverN/asian_MC_final")
 sns.lineplot(data=result, x="Simulation", y="Values", label = "Monte Carlo")
 plt.plot(nn, asian_anal_list, label = "Analytical")
-plt.plot(nn, asian_chris, label = "Chris")
+#plt.plot(nn, asian_chris, label = "Chris")
 plt.xscale("log") 
 plt.legend()
 plt.show()
@@ -189,10 +211,12 @@ T = 1
 N = 365
 M = n = 1000
 
-asian_arith_MC = asian_MC(S,N,T,r,K, n, type_op = "arithmetic")[0]
-asian_geom_MC = asian_MC(S,N,T,r,K, n, type_op = "geometric")[0]
-asian_anal = asian_anal(S,N,T,sigma,r,K)
-asian_cv = asian_arith_MC + asian_anal + asian_geom_MC
+control = asian_MC(S,N,T,r,K, n, type_op = "control")[0]
+var_contr = asian_MC(S,N,T,r,K, n, type_op = "control")[1]
+asian_MC = sian_MC(S,N,T,r,K, n, type_op = "control")[2]
+var_MC = sian_MC(S,N,T,r,K, n, type_op = "control")[3]
+print(control, var_contr, asian_MC, var_MC)
+
 
 #%%
 """
