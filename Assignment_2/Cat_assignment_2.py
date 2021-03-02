@@ -117,7 +117,7 @@ result.to_csv("asian_MC_final")
 """
 1.1: plot for comparing analytical and MC values
 """
-df = pd.read_csv("j * T/asian_MC_final")
+df = pd.read_csv("jToverN/asian_MC_final")
 sns.lineplot(data=df, x="Simulation", y="Values", label = "Monte Carlo")
 plt.plot(nn, asian_anal_list, label = "Analytical")
 plt.show()
