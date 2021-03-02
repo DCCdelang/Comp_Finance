@@ -44,7 +44,7 @@ def asian_anal(S,N,T,sigma,r,K):
 
     return np.exp(-r*T)*(S*np.exp(r_tilde*T)*N_(d_tilde_1)-K*N_(d_tilde_2))
 
-def asian_MC(S,N,T,r,K, n,  = "geometric"):
+def asian_MC(S,N,T,r,K, n, type_op = "geometric"):
     payoff = []
     sim = []
     #data = {"Values":payoff, "Simulation":sim}
@@ -114,7 +114,7 @@ N = 365
 M = n = 1000
 
 anal = asian_anal(S,N,T,sigma,r,K)
-geom = asian_MC(S,N,T,r,K, n, a = "geometric")
+geom = asian_MC(S,N,T,r,K, n, type_op = "geometric")
 print(anal, geom)
 # asian_chris = Asian_call_MC(M=50,S0=100,K=99,T=1,r=0.06,sigma=0.2)
 # print(asian_chris)
