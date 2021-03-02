@@ -77,6 +77,21 @@ def asian_MC(S,N,T,r,K, n, type = "geometric"):
     df.to_csv(f"asian_MC_{n}.csv")
     return np.exp(-r * T) * np.mean(payoff), np.std(payoff)/sqrt(N)
 
+def exact_GBM(S0=100,K=99,T=1,r=0.06,sigma=0.2,N=365):
+    dt= T/N
+    S=[] # history stock price
+    for n in range(N):
+        Zm= np.random.normal(0,1)
+        S0= S0 * np.exp((r-0.5*sigma**2)*dt+sigma*np.sqrt(dt)*Zm)
+        S.append(S0)
+    return S
+    
+def Asian_call_MC(M:int,S0=100,K=99,T=1,r=0.06,sigma=0.2):
+    payoff=[]
+    for i in range(0,M):
+        S=exact_GBM(S0,K,T,r,sigma) # all the history price
+        payoff.append(max(gmean(S)-K, 0))
+    return np.exp(-r*T)*np.mean(payoff), np.std(payoff)/np.sqrt(M)
 
 #%%
 #### ASIAN OPTION
@@ -88,16 +103,16 @@ T = 1
 N = 365
 M = n = 1000
 
-asian_anal = asian_anal(S,N,T,sigma,r,K)
-print(asian_anal)
+asian_analytical = asian_anal(S,N,T,sigma,r,K)
+print(asian_analytical)
 asian_geom = asian_MC(S,N,T,r,K, n, type = "geometric")
 print(asian_geom)
-asian_chris = Asian_call_MC(M=50,S0=100,K=99,T=1,r=0.06,sigma=0.2)
-print(asian_chris)
+#asian_chris = Asian_call_MC(M=50,S0=100,K=99,T=1,r=0.06,sigma=0.2)
+#print(asian_chris)
 
 #%%
 nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
-#nn = [100,500, 1000]
+nn = [100,500, 1000]
 asian_MC_list = []
 asian_anal_list = []
 standard_error = []
@@ -117,6 +132,12 @@ result.to_csv("asian_MC_final")
 """
 1.1: plot for comparing analytical and MC values
 """
+nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
+asian_anal_list = []
+for n in nn:
+    asian_anal_list.append(asian_anal(S,N,T,sigma,r,K))
+
+
 df = pd.read_csv("jToverN/asian_MC_final")
 sns.lineplot(data=df, x="Simulation", y="Values", label = "Monte Carlo")
 plt.plot(nn, asian_anal_list, label = "Analytical")
