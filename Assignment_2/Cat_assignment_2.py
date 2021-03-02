@@ -44,7 +44,7 @@ def asian_anal(S,N,T,sigma,r,K):
 
     return np.exp(-r*T)*(S*np.exp(r_tilde*T)*N_(d_tilde_1)-K*N_(d_tilde_2))
 
-def asian_MC(S,N,T,r,K, n, type_op = "geometric"):
+def asian_MC(S,N,T,r,K, n,  = "geometric"):
     payoff = []
     sim = []
     ST = S
@@ -52,11 +52,22 @@ def asian_MC(S,N,T,r,K, n, type_op = "geometric"):
     #df = pd.DataFrame() 
     for i in range(n):
         S_ti_ar = 0
+<<<<<<< HEAD
         S_ti_geo = []
         ST = S
         T_i = T/N
 
         if type_op == "arithmetic":
+=======
+<<<<<<< HEAD
+        ST=S
+        if a == "arithmetic":
+=======
+        S_ti_geo = [] 
+        if type_op == "arithmetic":
+>>>>>>> f42aed72169cfc262b06f3c0b5be7540197ebae9
+            Z = np.random.normal()
+>>>>>>> 20efc26a35f80e4760aa2fbc69d3e81ff906e2a1
             for j in range(N):
                 Z = np.random.normal()
                 ST = ST + (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
@@ -65,12 +76,29 @@ def asian_MC(S,N,T,r,K, n, type_op = "geometric"):
             payoff.append(max(np.mean(S_ti_ar)-K, 0))
             sim.append(n)
 
+<<<<<<< HEAD
+        elif a == "geometric":
+            S_ti_geo = [] 
+            for j in range(N):
+                Z = np.random.normal(0,1)
+                T_i = T/N
+                ST = ST * np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z)
+                S_ti_geo.append(ST)
+=======
         elif type_op == "geometric":
             for j in range(N):
                 Z = np.random.normal(0,1)
+<<<<<<< HEAD
                 ST = ST * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
                 S_ti_geo.append(ST)
+=======
+                T_i = T/N
+                ST_ = S * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
+                S_ti_geo.append(ST_)
+>>>>>>> f42aed72169cfc262b06f3c0b5be7540197ebae9
+>>>>>>> 20efc26a35f80e4760aa2fbc69d3e81ff906e2a1
 
+            print(gmean(S_ti_geo)-K)
             payoff.append(max(gmean(S_ti_geo)-K, 0))
             #print(gmean(S_ti_geo)-K)
             sim.append(n)
@@ -113,6 +141,18 @@ T = 1
 N = 365
 M = n = 1000
 
+<<<<<<< HEAD
+anal = asian_anal(S,N,T,sigma,r,K)
+
+geom = asian_MC(S,N,T,r,K, n, a = "geometric")
+print(anal, geom)
+# asian_chris = Asian_call_MC(M=50,S0=100,K=99,T=1,r=0.06,sigma=0.2)
+# print(asian_chris)
+
+#%%
+nn = [100,500, 1000,5000]
+#nn = [100,500, 1000]
+=======
 asian_analytical = asian_anal(S,N,T,sigma,r,K)
 print(asian_analytical)
 asian_geom = asian_MC(S,N,T,r,K, n, type_op = "geometric")
@@ -122,7 +162,12 @@ print(asian_geom)
 
 #%%
 nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
+<<<<<<< HEAD
 #nn = [100,500, 1000,5000, 10000, 50000]
+=======
+nn = [100,500, 1000]
+>>>>>>> f42aed72169cfc262b06f3c0b5be7540197ebae9
+>>>>>>> 20efc26a35f80e4760aa2fbc69d3e81ff906e2a1
 asian_MC_list = []
 asian_anal_list = []
 standard_error = []
@@ -130,8 +175,17 @@ asian_chris = []
 columns = ["Values", "Simulation"]
 df_final = pd.DataFrame()
 for n in nn:
+<<<<<<< HEAD
+    
+    MC = asian_MC(S,N,T,r,K,n,type = "geometric")
+=======
     MC = asian_MC(S,N,T,r,K,n,type_op = "geometric")
+<<<<<<< HEAD
     #asian_chris.append(Asian_call_MC(M=n,S0=100,K=99,T=1,r=0.06,sigma=0.2)[0])
+=======
+    asian_chris.append(Asian_call_MC(M=n,S0=100,K=99,T=1,r=0.06,sigma=0.2)[0])
+>>>>>>> f42aed72169cfc262b06f3c0b5be7540197ebae9
+>>>>>>> 20efc26a35f80e4760aa2fbc69d3e81ff906e2a1
     asian_MC_list.append(MC[0])
     standard_error.append(MC[1])
     asian_anal_list.append(asian_anal(S,N,T,sigma,r,K))
@@ -144,6 +198,10 @@ result.to_csv("asian_MC_final")
 """
 1.1: plot for comparing analytical and MC values
 """
+<<<<<<< HEAD
+df = pd.read_csv("jToverN/asian_MC_final")
+sns.lineplot(data=df, x="Simulation", y="Values", label = "Monte Carlo")
+=======
 """
 nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
 asian_anal_list = []
@@ -153,6 +211,7 @@ for n in nn:
 
 df = pd.read_csv("asian_MC_final")
 sns.lineplot(data=result, x="Simulation", y="Values", label = "Monte Carlo")
+>>>>>>> f42aed72169cfc262b06f3c0b5be7540197ebae9
 plt.plot(nn, asian_anal_list, label = "Analytical")
 plt.plot(nn, asian_chris, label = "Chris")
 plt.xscale("log") 

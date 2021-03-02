@@ -172,6 +172,7 @@ def Hedge(S,N,T,sigmas,r,K):
         a.append(d_s)
         b.append(delta)
         l.append(abs(delta - d_s))
+        print(delta)
     plt.plot(sigmas, a, label="Black-Scholes")
     plt.plot(sigmas,b,"--", label="Binomial")
     plt.xlabel("Volatility", fontsize=14)
@@ -268,7 +269,7 @@ plt.show()
 
 
 # raise ValueError()
-# Hedge(S,N,T,sigmas,r,K)
+Hedge(100,N,T,[0.2],r,99)
 # sigma_change(S,N,T,sigmas,r,K)
 # convergence(S,N,T,sigma,r,K)
 # N_change(S,Ns,T,0.2,r,K)
