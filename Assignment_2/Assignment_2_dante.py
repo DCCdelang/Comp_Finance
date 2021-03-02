@@ -118,3 +118,18 @@ sns.lineplot(data = df,x="vol",y="value")
 plt.xlabel("Volatility")
 plt.ylabel("Option value")
 plt.show()
+
+#%%
+"""
+Part II: Estimation of Sensitivities in MC
+"""
+
+# 1)
+
+epsilon = [0, 0.01, 0.02, 0.5]
+
+for S in :
+    for i in range(N_samples):
+        sample = eulerMethodPut(S,T,K,r,vol)
+        samples.append(sample)
+    average = np.exp(-r*T)*np.mean(samples)
