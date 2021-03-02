@@ -205,9 +205,9 @@ T = 1
 N=50
 epsilons = [0.0001]
 d = ((np.log(S/K) + ((r-(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
-d_s = N_(d)
+d_s = -N_(-d)
 print("\n")
-print(d_s)
+print("Black-Scholes = ", d_s)
 
 option_prices = []
 
@@ -239,4 +239,4 @@ print(option_prices, option_prices2)
 
 for i in range(3):
     delta = abs((option_prices2[i] - option_prices[i])/epsilon)
-    print(delta)
+    print("Delta = ", delta)

@@ -1,3 +1,4 @@
+#%%
 """
 Assignment 2 Computational Finance
 Author: Dante de Lang
@@ -14,6 +15,11 @@ from numpy.random import RandomState, SeedSequence
 rs = RandomState(MT19937(SeedSequence(123456789)))
 import time
 
+#%%
+"""
+Part 1: Basic Option Valuation
+"""
+
 def eulerMethodPut(S,T,K,r,vol):
     Z = np.random.normal()
     S_T = S * np.exp((r-0.5*vol**2)*T + vol*(T**0.5)*Z)
@@ -27,39 +33,103 @@ def black_scholes(vol, S, T, K, r):
     d2 = d1 - (vol*T**0.5)
     return - S * N_func(-d1) + np.exp(-r * T) * K * N_func(-d2)
 
-vol = 0.2
-K = 99
-S = 100
-r = 0.06
-T = 1
-
-BS_value = black_scholes(vol, S, T, K, r)
-print("Analytical value", BS_value)
-
-factor_list = [2,3,4,5]
-simulations = 3
-
-averages = []
-
-for K in np.arange(70,99,5):
+def monte_Carlo(S,T,K,r,vol,factor_list,simulations):
+    averages = []
     for factor in factor_list:
-        start = time.time()
         N_samples = 10**factor
         for sim in range(simulations):
             samples = []
             for i in range(N_samples):
                 sample = eulerMethodPut(S,T,K,r,vol)
-                if sample != 0:
-                    samples.append(sample)
-            average = np.exp(-r*T)*(sum(samples)/N_samples)
+                samples.append(sample)
+            average = np.exp(-r*T)*np.mean(samples)
+            std = np.std(samples)
             averages.append([N_samples,average])
-        print(N_samples, "takes", time.time()-start, "seconds")
+    return averages
+    # df = pd.DataFrame(averages,columns=["N_samples","value"])
+    # return df
 
-    df = pd.DataFrame(averages,columns=["N_samples","value"])
-    sns.lineplot(data=df,x="N_samples",y="value", label="MC"+str(K))
-# plt.hlines(BS_value,averages[0][0],averages[-1][0],label="BS")
+vol = 0.2
+K = 99
+S = 100
+r = 0.06
+T = 1
+#%%
+# First test
+
+factor_list = [1,2,3,4,5,6]
+simulations = 20
+
+MC_list = monte_Carlo(S,T,K,r,vol,factor_list,simulations)
+df = pd.DataFrame(MC_list,columns=["N_samples","value"])
+df.to_csv("MC_normal.csv")
+
+print(df)
+
+#%%
+df = pd.read_csv("MC_normal.csv")
+print(df.head())
+BS_value = black_scholes(vol, S, T, K, r)
+print("Analytical value", BS_value)
+
+sns.lineplot(data=df,x="N_samples",y="value", label="MC")
+plt.hlines(BS_value,10**factor_list[0],10**factor_list[-1],label="BS")
 plt.xscale("log")
 plt.legend()
 plt.show()
 # plt.pause(5)
 # plt.close()
+
+#%%
+""" For different strike prices """
+
+factor_list = [5]
+simulations = 5
+K_list = [30,40,45,50,60,70,80,90,99]
+payoff_K = []
+for K in K_list:
+    payoff_list = monte_Carlo(S,T,K,r,vol,factor_list,simulations)
+    for sim in range(simulations):
+        payoff_K.append([K,payoff_list[sim][1]])
+print(pd.DataFrame(payoff_K))
+df = pd.DataFrame(payoff_K,columns=["K","value"])
+df.replace(np.nan,0)
+
+sns.lineplot(data = df,x="K",y="value")
+plt.xlabel("K-value")
+plt.ylabel("Option value")
+plt.show()
+
+#%%
+""" For different Volitalities"""
+factor_list = [5]
+simulations = 5
+vol_list = [0.1,0.2,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,7,10]
+
+payoff_vol = []
+for vol in vol_list:
+    payoff_list = monte_Carlo(S,T,K,r,vol,factor_list,simulations)
+    for sim in range(simulations):
+        payoff_vol.append([vol,payoff_list[sim][1]])
+print(pd.DataFrame(payoff_vol))
+df = pd.DataFrame(payoff_vol,columns=["vol","value"])
+
+sns.lineplot(data = df,x="vol",y="value")
+plt.xlabel("Volatility")
+plt.ylabel("Option value")
+plt.show()
+
+#%%
+"""
+Part II: Estimation of Sensitivities in MC
+"""
+
+# 1)
+
+epsilon = [0, 0.01, 0.02, 0.5]
+
+for S in :
+    for i in range(N_samples):
+        sample = eulerMethodPut(S,T,K,r,vol)
+        samples.append(sample)
+    average = np.exp(-r*T)*np.mean(samples)

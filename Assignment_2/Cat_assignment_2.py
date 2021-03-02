@@ -44,15 +44,24 @@ def asian_anal(S,N,T,sigma,r,K):
 
     return np.exp(-r*T)*(S*np.exp(r_tilde*T)*N_(d_tilde_1)-K*N_(d_tilde_2))
 
+<<<<<<< HEAD
 def asian_MC(S,N,T,r,K, n, a = "geometric"):
+=======
+def asian_MC(S,N,T,r,K, n, type_op = "geometric"):
+>>>>>>> f42aed72169cfc262b06f3c0b5be7540197ebae9
     payoff = []
     sim = []
     #data = {"Values":payoff, "Simulation":sim}
     #df = pd.DataFrame() 
     for i in range(n):
         S_ti_ar = 0
+<<<<<<< HEAD
         ST=S
         if a == "arithmetic":
+=======
+        S_ti_geo = [] 
+        if type_op == "arithmetic":
+>>>>>>> f42aed72169cfc262b06f3c0b5be7540197ebae9
             Z = np.random.normal()
             for j in range(N):
                 T_i = j*T/N
@@ -62,6 +71,7 @@ def asian_MC(S,N,T,r,K, n, a = "geometric"):
             payoff.append(max(np.mean(S_ti_ar)-K, 0))
             sim.append(n)
 
+<<<<<<< HEAD
         elif a == "geometric":
             S_ti_geo = [] 
             for j in range(N):
@@ -69,6 +79,16 @@ def asian_MC(S,N,T,r,K, n, a = "geometric"):
                 T_i = T/N
                 ST = ST * np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z)
                 S_ti_geo.append(ST)
+=======
+        elif type_op == "geometric":
+            #T_i =  T/N
+            
+            for j in range(N):
+                Z = np.random.normal(0,1)
+                T_i = T/N
+                ST_ = S * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
+                S_ti_geo.append(ST_)
+>>>>>>> f42aed72169cfc262b06f3c0b5be7540197ebae9
 
             print(gmean(S_ti_geo)-K)
             payoff.append(max(gmean(S_ti_geo)-K, 0))
@@ -77,8 +97,33 @@ def asian_MC(S,N,T,r,K, n, a = "geometric"):
     data = {"Values":payoff, "Simulation":sim}
     df = pd.DataFrame(data) 
     df.to_csv(f"asian_MC_{n}.csv")
-    return np.exp(-r * T) * np.mean(payoff), np.std(payoff)/sqrt(N)
+    return np.exp(-r * T) * np.mean(payoff), np.std(payoff)/sqrt(n)
+def first(S,N,T,r,K, n):
+    T_i = T/N
+    S_ti_geo = []
+    for j in range(N):
+                Z = np.random.normal(0,1)
+                ST_ = S * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
+                S_ti_geo.append(ST_)
+def second():
 
+
+
+def exact_GBM(S0=100,K=99,T=1,r=0.06,sigma=0.2,N=365):
+    dt= T/N
+    S=[] # history stock price
+    for n in range(N):
+        Zm= np.random.normal(0,1)
+        S0= S0 * np.exp((r-0.5*sigma**2)*dt+sigma*np.sqrt(dt)*Zm)
+        S.append(S0)
+    return S
+    
+def Asian_call_MC(M:int,S0=100,K=99,T=1,r=0.06,sigma=0.2):
+    payoff=[]
+    for i in range(0,M):
+        S=exact_GBM(S0,K,T,r,sigma) # all the history price
+        payoff.append(max(gmean(S)-K, 0))
+    return np.exp(-r*T)*np.mean(payoff), np.std(payoff)/np.sqrt(M)
 
 #%%
 #### ASIAN OPTION
@@ -90,6 +135,7 @@ T = 1
 N = 365
 M = n = 1000
 
+<<<<<<< HEAD
 anal = asian_anal(S,N,T,sigma,r,K)
 
 geom = asian_MC(S,N,T,r,K, n, a = "geometric")
@@ -100,14 +146,32 @@ print(anal, geom)
 #%%
 nn = [100,500, 1000,5000]
 #nn = [100,500, 1000]
+=======
+asian_analytical = asian_anal(S,N,T,sigma,r,K)
+print(asian_analytical)
+asian_geom = asian_MC(S,N,T,r,K, n, type = "geometric")
+print(asian_geom)
+#asian_chris = Asian_call_MC(M=50,S0=100,K=99,T=1,r=0.06,sigma=0.2)
+#print(asian_chris)
+
+#%%
+nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
+nn = [100,500, 1000]
+>>>>>>> f42aed72169cfc262b06f3c0b5be7540197ebae9
 asian_MC_list = []
 asian_anal_list = []
 standard_error = []
+asian_chris = []
 columns = ["Values", "Simulation"]
 df_final = pd.DataFrame()
 for n in nn:
+<<<<<<< HEAD
     
     MC = asian_MC(S,N,T,r,K,n,type = "geometric")
+=======
+    MC = asian_MC(S,N,T,r,K,n,type_op = "geometric")
+    asian_chris.append(Asian_call_MC(M=n,S0=100,K=99,T=1,r=0.06,sigma=0.2)[0])
+>>>>>>> f42aed72169cfc262b06f3c0b5be7540197ebae9
     asian_MC_list.append(MC[0])
     standard_error.append(MC[1])
     asian_anal_list.append(asian_anal(S,N,T,sigma,r,K))
@@ -120,9 +184,24 @@ result.to_csv("asian_MC_final")
 """
 1.1: plot for comparing analytical and MC values
 """
+<<<<<<< HEAD
 df = pd.read_csv("jToverN/asian_MC_final")
 sns.lineplot(data=df, x="Simulation", y="Values", label = "Monte Carlo")
+=======
+"""
+nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
+asian_anal_list = []
+for n in nn:
+    asian_anal_list.append(asian_anal(S,N,T,sigma,r,K))
+"""
+
+#df = pd.read_csv("jToverN/asian_MC_final")
+sns.lineplot(data=result, x="Simulation", y="Values", label = "Monte Carlo")
+>>>>>>> f42aed72169cfc262b06f3c0b5be7540197ebae9
 plt.plot(nn, asian_anal_list, label = "Analytical")
+plt.plot(nn, asian_chris, label = "Chris")
+plt.xscale("log") 
+plt.legend()
 plt.show()
 plt.savefig("Asian_1_2.pdf")
 #df_final.append(df, ignore_index=True)
