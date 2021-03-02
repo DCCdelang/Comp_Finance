@@ -47,47 +47,45 @@ def asian_anal(S,N,T,sigma,r,K):
 def asian_MC(S,N,T,r,K, n, type_op = "geometric"):
     payoff = []
     sim = []
+    ST = S
     #data = {"Values":payoff, "Simulation":sim}
     #df = pd.DataFrame() 
     for i in range(n):
         S_ti_ar = 0
-        S_ti_geo = [] 
+        S_ti_geo = []
+        ST = S
+        T_i = T/N
+
         if type_op == "arithmetic":
-            Z = np.random.normal()
             for j in range(N):
-                T_i = j*T/N
-                ST = S * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
+                Z = np.random.normal()
+                ST = ST + (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
                 S_ti_ar.append(ST)
         
             payoff.append(max(np.mean(S_ti_ar)-K, 0))
             sim.append(n)
 
         elif type_op == "geometric":
-            #T_i =  T/N
-            
             for j in range(N):
                 Z = np.random.normal(0,1)
-                T_i = T/N
-                ST_ = S * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
-                S_ti_geo.append(ST_)
+                ST = ST * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
+                S_ti_geo.append(ST)
 
             payoff.append(max(gmean(S_ti_geo)-K, 0))
+            #print(gmean(S_ti_geo)-K)
             sim.append(n)
+        elif type_op == "control":
+            for j in range(N):
+                Z = np.random.normal(0,1)
+                ST = ST * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
+                S_ti_geo.append(ST)
+
+            payoff.append(max(gmean(S_ti_geo)-K, 0))            
     
     data = {"Values":payoff, "Simulation":sim}
     df = pd.DataFrame(data) 
     df.to_csv(f"asian_MC_{n}.csv")
     return np.exp(-r * T) * np.mean(payoff), np.std(payoff)/sqrt(n)
-def first(S,N,T,r,K, n):
-    T_i = T/N
-    S_ti_geo = []
-    for j in range(N):
-                Z = np.random.normal(0,1)
-                ST_ = S * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
-                S_ti_geo.append(ST_)
-def second():
-
-
 
 def exact_GBM(S0=100,K=99,T=1,r=0.06,sigma=0.2,N=365):
     dt= T/N
@@ -117,14 +115,14 @@ M = n = 1000
 
 asian_analytical = asian_anal(S,N,T,sigma,r,K)
 print(asian_analytical)
-asian_geom = asian_MC(S,N,T,r,K, n, type = "geometric")
+asian_geom = asian_MC(S,N,T,r,K, n, type_op = "geometric")
 print(asian_geom)
 #asian_chris = Asian_call_MC(M=50,S0=100,K=99,T=1,r=0.06,sigma=0.2)
 #print(asian_chris)
 
 #%%
 nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
-nn = [100,500, 1000]
+#nn = [100,500, 1000,5000, 10000, 50000]
 asian_MC_list = []
 asian_anal_list = []
 standard_error = []
@@ -133,7 +131,7 @@ columns = ["Values", "Simulation"]
 df_final = pd.DataFrame()
 for n in nn:
     MC = asian_MC(S,N,T,r,K,n,type_op = "geometric")
-    asian_chris.append(Asian_call_MC(M=n,S0=100,K=99,T=1,r=0.06,sigma=0.2)[0])
+    #asian_chris.append(Asian_call_MC(M=n,S0=100,K=99,T=1,r=0.06,sigma=0.2)[0])
     asian_MC_list.append(MC[0])
     standard_error.append(MC[1])
     asian_anal_list.append(asian_anal(S,N,T,sigma,r,K))
@@ -153,7 +151,7 @@ for n in nn:
     asian_anal_list.append(asian_anal(S,N,T,sigma,r,K))
 """
 
-#df = pd.read_csv("jToverN/asian_MC_final")
+df = pd.read_csv("asian_MC_final")
 sns.lineplot(data=result, x="Simulation", y="Values", label = "Monte Carlo")
 plt.plot(nn, asian_anal_list, label = "Analytical")
 plt.plot(nn, asian_chris, label = "Chris")
@@ -178,7 +176,7 @@ plt.show()
 #%%
 """
 3.3.a: Apply the control variates technique for the calculation of 
-the value of the Asian op- tion based on arithmetic averages.
+the value of the Asian option based on arithmetic averages.
 """
 K = 99
 S = 100
@@ -188,16 +186,24 @@ T = 1
 N = 365
 M = n = 1000
 
-asian_arith_MC = asian_MC(S,N,T,r,K, n, type = "arithmetic")
-asian_geom_MC = asian_MC(S,N,T,r,K, n, type = "geometric")
+asian_arith_MC = asian_MC(S,N,T,r,K, n, type_op = "arithmetic")[0]
+asian_geom_MC = asian_MC(S,N,T,r,K, n, type_op = "geometric")[0]
 asian_anal = asian_anal(S,N,T,sigma,r,K)
 asian_cv = asian_arith_MC + asian_anal + asian_geom_MC
+
 #%%
 """
 3.3.b: different parameter settings.
 """
+asian_geom_MC = []
+asian_ana
 # strike
 K = np.linspace(50, 99, 99-50)
+for k in K:
+    asian_arith_MC = asian_MC(S,N,T,r,K, n, type_op = "arithmetic")[0]
+    asian_geom_MC = asian_MC(S,N,T,r,K, n, type_op = "geometric")[0]
+    asian_anal = asian_anal(S,N,T,sigma,r,K)
+    asian_cv = asian_arith_MC + asian_anal + asian_geom_MC
 # number of paths
 N = np.linspace(2, 365*2, 365*2-1)
 # number of time points
