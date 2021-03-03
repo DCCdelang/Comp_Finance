@@ -100,6 +100,7 @@ def black_scholes(vol, S, T, K, r):
     d2 = d1 - (vol*T**0.5)
     return S * N_func(d1) - np.exp(-r * T) * K * N_func(d2)
 
+print(black_scholes(vol, S, T, K, r))
 # Convergence for different volatility values
 volList = [0.2, 0.5, 0.95]
 N = 50
