@@ -3,8 +3,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from math import *
-from scipy.stats import norm, gmean, variance
+from scipy.stats import norm, gmean
 import seaborn as sns
+import random
 
 #%%
 
@@ -44,21 +45,21 @@ def asian_anal(S,N,T,sigma,r,K):
 
     return np.exp(-r*T)*(S*np.exp(r_tilde*T)*N_(d_tilde_1)-K*N_(d_tilde_2))
 
-def asian_MC(S,N,T,r,K, n, type_op = "geometric"):
+def asian_MC(S,N,T,sigma,r,K, n, type_op, param):
     payoff = []
     payoff_a = []
     payoff_g = []
     sim = []
+    T_i = T/N
     #data = {"Values":payoff, "Simulation":sim}
     #df = pd.DataFrame() 
     for i in range(n):
         S_ti_ar = []
         S_ti_geo = []
         ST = ST_g = ST_a = S
-        T_i = T/N
 
         if type_op == "arithmetic":
-            for j in range(N):
+            for j in range(int(N)):
                 Z = np.random.normal()
                 ST = ST + (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
                 S_ti_ar.append(ST)
@@ -67,8 +68,8 @@ def asian_MC(S,N,T,r,K, n, type_op = "geometric"):
             sim.append(n)
 
         elif type_op == "geometric":
-            for j in range(N):
-                Z = np.random.normal(0,1)
+            for j in range(int(N)):
+                Z = np.random.normal()
                 ST = ST * np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z)
                 S_ti_geo.append(ST)
 
@@ -77,52 +78,58 @@ def asian_MC(S,N,T,r,K, n, type_op = "geometric"):
             sim.append(n)
 
         elif type_op == "control":
-            for j in range(N):
-                Z = np.random.normal(0,1)
+            for j in range(int(N)):
+                Z = np.random.normal()
                 
                 ST_g = ST_g * (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
                 S_ti_geo.append(ST_g)
                 
                 ST_a = ST_a + (np.exp( (r-0.5*sigma**2)*T_i + sigma*np.sqrt(T_i)*Z))
-                S_ti_geo.append(ST_a)
+                S_ti_ar.append(ST_a)
 
             payoff_g.append(max(gmean(S_ti_geo)-K, 0))            
-            payoff_a.append(max(np.mean(S_ti_geo)-K, 0))            
+            payoff_a.append(max(np.mean(S_ti_ar)-K, 0))            
             sim.append(n)
 
 
+
     if type_op == "control":
+        K_ = np.repeat(K,n)
+        sigma_= np.repeat(sigma,n)
+        N_= np.repeat(N,n)
 
         control = np.exp(-r * T) * (np.mean(payoff_a)+asian_anal(S,N,T,sigma,r,K)-np.mean(payoff_g))
-        var_contr = np.exp(-r * T)**2 * ( variance(payoff_a) + variance(payoff_g) - 2*np.cov(payoff_a, payoff_g))
-        var_MC = variance(payoff_a)
-        data = {"Values":payoff, "Simulation":sim}
-        df = pd.DataFrame(data) 
-        df.to_csv(f"asian_MC_{n}.csv")
+        #var_contr = np.exp(-r * T)**2 * ( np.var(payoff_a) + np.var(payoff_g) - 2*np.cov(payoff_a, payoff_g))
+        #var_MC = np.var(payoff_a)
+        #print(len(np.exp(-r * T) * np.asarray(payoff_a)),
+        #len(np.exp(-r * T) * np.asarray(payoff_g)),
+        #len(np.exp(-r * T) * (np.asarray(payoff_a)+asian_anal(S,N,T,sigma,r,K)-np.asarray(payoff_g))),
+        #len(sim), len(K_), len(sigma_), len(N_))
+        data = {"Arithmetic":np.exp(-r * T) * np.asarray(payoff_a),
+        "Geometric":np.exp(-r * T) * np.asarray(payoff_g),
+        "Control": np.exp(-r * T) * (np.asarray(payoff_a)+asian_anal(S,N,T,sigma,r,K)-np.asarray(payoff_g)),
+        "K":K_,
+        "sigma": sigma_,
+        "N": N_}
+        df = pd.DataFrame(data)
+        if param == "K":
+            df.to_csv(f"K/asian_MC_{n}_{K}_{sigma}_{N}.csv")
+        elif param == "N":
+            df.to_csv(f"N/asian_MC_{n}_{K}_{sigma}_{N}.csv")
+        elif param == "sigma":
+            df.to_csv(f"sigma/asian_MC_{n}_{K}_{sigma}_{N}.csv")
+        elif param == "none":
+            df.to_csv(f"asian_MC_{n}_{K}_{sigma}_{N}.csv")
+        
 
-        return control, var_contr, np.exp(-r * T) * (np.mean(payoff_a)), var_MC
+        return control, np.exp(-r * T) * (np.mean(payoff_a))
 
-
-    data = {"Values":payoff, "Simulation":sim}
+    option_values = np.exp(-r * T) * np.asarray(payoff)
+    #print(option_values)
+    data = {"Values": option_values, "Simulation":sim}
     df = pd.DataFrame(data) 
-    df.to_csv(f"asian_MC_{n}.csv")
+    df.to_csv(f"asian_MC_{n}_{K}_{sigma}_{N}.csv")
     return np.exp(-r * T) * np.mean(payoff), np.std(payoff)/sqrt(n)
-
-def exact_GBM(S0=100,K=99,T=1,r=0.06,sigma=0.2,N=365):
-    dt= T/N
-    S=[] # history stock price
-    for n in range(N):
-        Zm= np.random.normal(0,1)
-        S0= S0 * np.exp((r-0.5*sigma**2)*dt+sigma*np.sqrt(dt)*Zm)
-        S.append(S0)
-    return S
-    
-def Asian_call_MC(M:int,S0=100,K=99,T=1,r=0.06,sigma=0.2):
-    payoff=[]
-    for i in range(0,M):
-        S=exact_GBM(S0,K,T,r,sigma) # all the history price
-        payoff.append(max(gmean(S)-K, 0))
-    return np.exp(-r*T)*np.mean(payoff), np.std(payoff)/np.sqrt(M)
 
 #%%
 #### ASIAN OPTION
@@ -134,41 +141,29 @@ T = 1
 N = 365
 M = n = 1000
 
-anal = asian_anal(S,N,T,sigma,r,K)
-geom = asian_MC(S,N,T,r,K, n, type_op = "geometric")
-print(anal, geom)
-# asian_chris = Asian_call_MC(M=50,S0=100,K=99,T=1,r=0.06,sigma=0.2)
-# print(asian_chris)
-
-#%%
-nn = [100,500, 1000,5000]
-#nn = [100,500, 1000]
-
 asian_analytical = asian_anal(S,N,T,sigma,r,K)
 print(asian_analytical)
-asian_geom = asian_MC(S,N,T,r,K, n, type_op = "geometric")
+asian_geom = asian_MC(S,N,T,sigma,r,K, n, type_op = "geometric", param="None")
 print(asian_geom)
-#asian_chris = Asian_call_MC(M=50,S0=100,K=99,T=1,r=0.06,sigma=0.2)
-#print(asian_chris)
+
 
 #%%
-nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
-#nn = [100,500, 1000,5000, 10000, 50000]
+nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000]
+#nn = [100000]
 asian_MC_list = []
 asian_anal_list = []
 standard_error = []
-asian_chris = []
 columns = ["Values", "Simulation"]
 df_final = pd.DataFrame()
 for n in nn:
-    MC = asian_MC(S,N,T,r,K,n,type_op = "geometric")
-    asian_MC_list.append(MC[0])
-    standard_error.append(MC[1])
-    asian_chris.append(Asian_call_MC(M=n,S0=100,K=99,T=1,r=0.06,sigma=0.2))
+    MC = asian_MC(S,N,T,sigma,r,K,n,type_op = "geometric", param="None")
+    #asian_MC_list.append(MC[0])
+    #standard_error.append(MC[1])
     asian_anal_list.append(asian_anal(S,N,T,sigma,r,K))
 
 #%%
-frames = [ pd.read_csv(f"correct_asian_MC/asian_MC_{n}.csv") for n in nn ]
+nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000]
+frames = [ pd.read_csv(f"asian_MC_{n}.csv") for n in nn ]
 result = pd.concat(frames)
 print(result)
 result.to_csv("asian_MC_final")
@@ -176,14 +171,14 @@ result.to_csv("asian_MC_final")
 """
 1.1: plot for comparing analytical and MC values
 """
+
 #df = pd.read_csv("jToverN/asian_MC_final")
 sns.lineplot(data=result, x="Simulation", y="Values", label = "Monte Carlo")
 plt.plot(nn, asian_anal_list, label = "Analytical")
-#plt.plot(nn, asian_chris, label = "Chris")
-plt.xscale("log") 
+plt.xscale("log")
 plt.legend()
-plt.show()
 plt.savefig("Asian_1_2.pdf")
+plt.show()
 #df_final.append(df, ignore_index=True)
 #df_final.to_csv(f"asian_MC_final.csv")
 """
@@ -209,141 +204,102 @@ r = 0.06
 sigma = 0.2
 T = 1
 N = 365
-M = n = 1000
+n = 10000
 
-control = asian_MC(S,N,T,r,K, n, type_op = "control")[0]
-var_contr = asian_MC(S,N,T,r,K, n, type_op = "control")[1]
-asian_MC = sian_MC(S,N,T,r,K, n, type_op = "control")[2]
-var_MC = sian_MC(S,N,T,r,K, n, type_op = "control")[3]
-print(control, var_contr, asian_MC, var_MC)
+MC = asian_MC(S,N,T,sigma,r,K, n, type_op="control")
+contr = MC[0]
+asian_mont = MC[1]
+
+print(contr, asian_mont)
 
 
 #%%
 """
 3.3.b: different parameter settings.
 """
-asian_geom_MC = []
-asian_ana
+K = 99
+S = 100
+r = 0.06
+sigma = 0.2
+T = 1
+N = 365
+n = 100
+
 # strike
-K = np.linspace(50, 99, 99-50)
-for k in K:
-    asian_arith_MC = asian_MC(S,N,T,r,K, n, type_op = "arithmetic")[0]
-    asian_geom_MC = asian_MC(S,N,T,r,K, n, type_op = "geometric")[0]
-    asian_anal = asian_anal(S,N,T,sigma,r,K)
-    asian_cv = asian_arith_MC + asian_anal + asian_geom_MC
+control = []
+asian_mont = []
+k = np.linspace(50, 99, 99-50+1)
+for K in k:
+    MC = asian_MC(S,N,T,sigma,r,K, n, type_op = "control", param="K")
+    control.append(MC[0])
+    asian_mont.append(MC[1])
+
+frames = [ pd.read_csv(f"K/asian_MC_{n}_{K}_{sigma}_{N}.csv") for K in k ]
+result = pd.concat(frames)
+print(result)
+result.to_csv("asian_MC_final_K")
+
+sns.lineplot(data=result, x="K", y="Arithmetic", label = "Control variate")
+sns.lineplot(data=result, x="K", y="Control", label = "MC only")
+plt.legend()
+plt.savefig("Asian_3_31.pdf")
+plt.show()
+
+#%%
 # number of paths
-N = np.linspace(2, 365*2, 365*2-1)
-# number of time points
-
-
-#%%
-"""
-1.1 Carry out convergence studies by increasingthe number of trials.  
-How do your results compare with the results obtained in assignment 1?
-"""
-print(black_scholes_p(S,N,T,sigma,r,K))
-
 K = 99
 S = 100
 r = 0.06
 sigma = 0.2
 T = 1
+N = 365
+n = 100
+NN = np.linspace(2, 365, 365-2+1)
+control = []
+asian_mont = []
 
-option_prices = []
-value = []
-time = []
-n = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
+for N in NN:
+    MC = asian_MC(S,N,T,sigma,r,K, n, type_op = "control", param="N")
+    control.append(MC[0])
+    asian_mont.append(MC[1])
 
-for i in range(5):
-    for N in list(n):
-        for i in range(int(N)):
-            approxList = ST(K, S, r, sigma, T)
-            # print(approxList)
-            value.append(approxList)
-        time.append(N)
-        option_prices.append(option_price(K, S, r, sigma, T, value))
+frames = [ pd.read_csv(f"N/asian_MC_{n}_{K}_{sigma}_{N}.csv") for N in NN ]
+result = pd.concat(frames)
+print(result)
+result.to_csv("N/asian_MC_final_N")
 
-
-# plt.plot(n, option_prices)
-data = {"Values":option_prices, "Time":time}
-df = pd.DataFrame(data) 
-df.to_csv(f"Monte_carlo.csv")
-sns.lineplot(data=df, x="Time", y="Values")
-plt.xscale("log") 
-plt.savefig("Convergence_option_price.pdf")
-plt.show()
-
-"""
-1.1 Perform numerical tests for varying values for the strike and the volatility parameter.
-"""
-
-
-option_prices = []
-value = []
-time = []
-sigmas = np.linspace(0.01, 10, 10)
-
-for sigma in list(sigmas):
-    value = []
-    for i in range(1000000):
-        approxList = ST(K, S, r, sigma, T)
-        # print(approxList)
-        value.append(approxList)
-    time.append(sigma)
-    option_prices.append(option_price(K, S, r, sigma, T, value))
-    print(option_prices)
-
-
-print(option_prices)
-
-plt.plot(sigmas, option_prices)
-plt.show()
-#%%
-option_prices = []
-
-time = []
-Ks = np.linspace(80, 120, 10)
-
-for K in list(Ks):
-    value = []
-    for i in range(1000000):
-        approxList = ST(K, S, r, sigma, T)
-        # print(approxList)
-        value.append(approxList)
-    time.append(sigma)
-    option_prices.append(option_price(K, S, r, sigma, T, value))
-
-plt.plot(Ks, option_prices)
+sns.lineplot(data=result, x="N", y="Arithmetic", label = "Control variate")
+sns.lineplot(data=result, x="N", y="Control", label = "MC only")
+plt.legend()
+plt.savefig("Asian_3_32.pdf")
 plt.show()
 
 #%%
+# sigma
 K = 99
 S = 100
 r = 0.06
 sigma = 0.2
 T = 1
-N=50
-epsilons = [0.01,0.02,0.5]
+N = 365
+n = 100
+vol = np.linspace(0.0001, 5, 50)
+control = []
+asian_mont = []
 
-option_prices = []
+for sigma in vol:
+    MC = asian_MC(S,N,T,sigma,r,K, n, type_op = "control", param="sigma")
+    control.append(MC[0])
+    asian_mont.append(MC[1])
 
-option_prices2 = []
-value = []
-value2 = []
-time = []
+frames = [ pd.read_csv(f"sigma/asian_MC_{n}_{K}_{sigma}_{N}.csv") for sigma in vol ]
+result = pd.concat(frames)
+print(result)
+result.to_csv("sigma/asian_MC_final_sigma")
 
-for epsilon in epsilons:
-    for i in range(1000000):
-        approxList = ST(K, S, r, sigma, T)
-        approx_list2 = ST(K, S+epsilon, r, sigma, T)
-        value.append(approxList)
-        value2.append(approx_list2)
-    option_prices.append(option_price(K, S, r, sigma, T, value))
-    option_prices2.append(option_price(K, S, r, sigma, T, value2))
-
-print(option_prices)
-
-for i in range(3):
-    delta = (option_prices2[i] - option_prices[i])/epsilon
-    print(delta)
-# %%
+sns.lineplot(data=result, x="sigma", y="Arithmetic", label = "Control variate")
+sns.lineplot(data=result, x="sigma", y="Control", label = "MC only")
+plt.legend()
+plt.savefig("Asian_3_33.pdf")
+plt.show()
+#%%
