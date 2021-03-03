@@ -196,47 +196,51 @@ def black_scholes_p(S,N,T,sigma,r,K):
 """
 2.1 
 """
-
+# Initial values
 K = 99
 S = 100
 r = 0.06
 sigma = 0.2
 T = 1
 N=50
-epsilons = [0.0001]
-d = ((np.log(S/K) + ((r-(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
-d_s = -N_(-d)
-print("\n")
-print("Black-Scholes = ", d_s)
 
+# Initial lists
 option_prices = []
-
 option_prices2 = []
 value = []
 value2 = []
-time = [100,10000,100000]
 
-np.random.seed(42)
-for epsilon in epsilons:
-    print(epsilon)
-    for i in time:
-        for _ in range(i):
-            approxList = ST(K, S, r, sigma, T)
-            value.append(approxList)
-        option_prices.append(option_price(K, S, r, sigma, T, value))
+# Paths and epsilons
+paths = 10000
+epsilon = 0.01
 
-np.random.seed(42)
-for epsilon in epsilons:
-    print(epsilon)
-    for i in time:
-        for _ in range(i):
-            approx_list2 = ST(K, S + epsilon, r, sigma, T)
-            value2.append(approx_list2)
-        option_prices2.append(option_price(K, S + epsilon, r, sigma, T, value2))
+# Black-Scholes model
+d = ((np.log(S/K) + ((r-(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
+d_s = (1 - N_(d))
+d_s = (1 - N_(d)) * np.exp(T*-r)
+print("\n")
+print("Black-Scholes = ", d_s)
+
+# Unbumped
+np.random.seed(35)
+for _ in range(paths):
+    approxList = ST(K, S, r, sigma, T)
+    value.append(approxList)
+option_prices.append(option_price(K, S, r, sigma, T, value))
+
+# Bumped
+np.random.seed(35)
+for _ in range(paths):
+    approx_list2 = ST(K, S + epsilon, r, sigma, T)
+    value2.append(approx_list2)
+option_prices2.append(option_price(K, S+epsilon, r, sigma, T, value2))
 
 
 print(option_prices, option_prices2)
 
-for i in range(3):
-    delta = abs((option_prices2[i] - option_prices[i])/epsilon)
-    print("Delta = ", delta)
+# Varying delta's
+for i in range(len(option_prices)):
+    delta = (option_prices2[i] - option_prices[i])/epsilon
+    absolute_error =option_prices[i]-option_prices2[i]
+    print(absolute_error)
+    print("Delta = ", abs(delta))

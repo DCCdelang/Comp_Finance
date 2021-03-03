@@ -61,10 +61,10 @@ def valueOptionMatrix( tree , T, r , K, sigma,N ) :
 sigmas = np.linspace(0.01, 10, 200)
 Ns = np.linspace(5,50,10)
 sigma = 0.2
-S = 100
+S = 99
 T = 1.
 N = 50
-K = 99
+K = 100
 r = 0.06
 # print(buildTree(S,sigma,T,N))
 # raise ValueError()
@@ -269,7 +269,7 @@ plt.show()
 
 
 # raise ValueError()
-Hedge(100,N,T,[0.2],r,99)
+# Hedge(100,N,T,[0.2],r,99)
 # sigma_change(S,N,T,sigmas,r,K)
 # convergence(S,N,T,sigma,r,K)
 # N_change(S,Ns,T,0.2,r,K)
