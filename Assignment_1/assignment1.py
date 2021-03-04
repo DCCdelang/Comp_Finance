@@ -269,7 +269,7 @@ plt.show()
 
 
 # raise ValueError()
-# Hedge(100,N,T,[0.2],r,99)
+Hedge(S,N,T,sigma,r,K)
 # sigma_change(S,N,T,sigmas,r,K)
 # convergence(S,N,T,sigma,r,K)
 # N_change(S,Ns,T,0.2,r,K)

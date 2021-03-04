@@ -22,7 +22,7 @@ def ST(K, S, r, sigma, T):
     Z = np.random.normal()
     ST = S* (np.exp( (r-0.5*(sigma**2))*T + sigma*np.sqrt(T)*Z))
     
-    return max(K-ST, 0)
+    return max(ST - K, 0)
 
 def N_(x):
     return norm.cdf(x)
@@ -84,7 +84,6 @@ def asian_MC(S,N,T,r,K, n, a = "geometric"):
 1.1 Carry out convergence studies by increasingthe number of trials.  How do your results compare with the results obtained in assignment 1?
 """
 # print(black_scholes_p(S,N,T,sigma,r,K))
-
 
 
 # option_prices = []
@@ -239,47 +238,52 @@ def asian_MC(S,N,T,r,K, n, a = "geometric"):
 2.1 
 """
 # # Initial values
-# K = 99
-# S = 100
-# r = 0.06
-# sigma = 0.2
-# T = 1
-# N=50
+K = 99
+S = 100
+r = 0.06
+sigma = 0.2
+T = 1
+N=50
 
-# # Initial lists
-# option_prices = []
-# option_prices2 = []
-# value = []
-# value2 = []
+# Initial lists
+option_prices = []
+option_prices2 = []
+value = []
+value2 = []
 
-# # Paths and epsilons
-# paths = 10000
-# epsilon = 0.01
+# Paths and epsilons
+paths = 1000000
+epsilon = 0.0001
 
-# # Black-Scholes model
-# d = ((np.log(S/K) + ((r-(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
-# d_s = (1 - N_(d))
-# d_s = (1 - N_(d)) * np.exp(T*-r)
-# print("\n")
-# print("Black-Scholes = ", d_s)
+# Black-Scholes model
+d = ((np.log(S/K) + ((r-(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
 
-# # Unbumped
-# np.random.seed(35)
-# for _ in range(paths):
-#     approxList = ST(K, S, r, sigma, T)
-#     value.append(approxList)
-# option_prices.append(option_price(K, S, r, sigma, T, value))
+d_1 = d + sigma* np.sqrt(T)
 
-# # Bumped
-# np.random.seed(35)
-# for _ in range(paths):
-#     approx_list2 = ST(K, S + epsilon, r, sigma, T)
-#     value2.append(approx_list2)
-# option_prices2.append(option_price(K, S+epsilon, r, sigma, T, value2))
+d_s = (1 - N_(d) - 1)
+# d_s = (N_(d))
+
+print("\n")
+print("Black-Scholes = ", d_s)
+
+# Unbumped
+np.random.seed(35)
+for _ in range(paths):
+    approxList = ST(K, S, r, sigma, T)
+    value.append(approxList)
+option_prices.append(option_price(K, S, r, sigma, T, value))
+
+# Bumped
+np.random.seed(35)
+for _ in range(paths):
+    approx_list2 = ST(K, S + epsilon, r, sigma, T)
+    value2.append(approx_list2)
+option_prices2.append(option_price(K, S + epsilon, r, sigma, T, value2))
 
 
-# print(option_prices, option_prices2)
-
+print(option_prices, option_prices2)
+delta = abs((option_prices2[0] - option_prices[0])/epsilon)
+print(delta)
 # # Varying delta's
 # for i in range(len(option_prices)):
 #     delta = (option_prices2[i] - option_prices[i])/epsilon
@@ -289,126 +293,3 @@ def asian_MC(S,N,T,r,K, n, a = "geometric"):
 
 
 
-
-
-#%%
-#### ASIAN OPTION
-K = 99
-S = 100
-r = 0.06
-sigma = 0.2
-T = 1
-N = 365
-M = n = 1000000
-
-anal = asian_anal(S,N,T,sigma,r,K)
-geom = asian_MC(S,N,T,r,K, n, a = "geometric")
-print(anal, geom)
-# asian_chris = Asian_call_MC(M=50,S0=100,K=99,T=1,r=0.06,sigma=0.2)
-# print(asian_chris)
-
-#%%
-nn = [100,500, 1000,5000, 10000, 50000]
-#nn = [100,500, 1000]
-asian_MC_list = []
-asian_anal_list = []
-standard_error = []
-columns = ["Values", "Simulation"]
-df_final = pd.DataFrame()
-for n in nn:
-    MC = asian_MC(S,N,T,r,K,n,a = "geometric")
-    asian_MC_list.append(MC[0])
-    standard_error.append(MC[1])
-    asian_anal_list.append(asian_anal(S,N,T,sigma,r,K))
-
-frames = [ pd.read_csv(f"asian_MC_{n}.csv") for n in nn ]
-df = pd.concat(frames)
-# print(result)
-# result.to_csv("asian_MC_final")
-#%%
-"""
-1.1: plot for comparing analytical and MC values
-"""
-# df = pd.read_csv("jToverN/asian_MC_final")
-sns.lineplot(data=df, x="Simulation", y="Values", label = "Monte Carlo")
-plt.plot(nn, asian_anal_list, label = "Analytical")
-plt.show()
-plt.savefig("Asian_1_2.pdf")
-#df_final.append(df, ignore_index=True)
-#df_final.to_csv(f"asian_MC_final.csv")
-"""
-plt.plot(nn, asian_MC_list, label = "Monte Carlo")
-plt.plot(nn, asian_anal_list, label = "Analytical")
-plt.plot(nn, np.asarray(asian_MC_list) + np.asarray(standard_error))
-plt.plot(nn, np.asarray(asian_MC_list) - np.asarray(standard_error))
-plt.legend()
-plt.show()
-"""
-#plt.xscale("log") 
-#plt.savefig("Convergence_option_price.pdf")
-
-
-#%%
-"""
-3.3.a: Apply the control variates technique for the calculation of 
-the value of the Asian op- tion based on arithmetic averages.
-"""
-K = 99
-S = 100
-r = 0.06
-sigma = 0.2
-T = 1
-<<<<<<< HEAD
-N = 365
-M = n = 1000
-
-asian_arith_MC = asian_MC(S,N,T,r,K, n, type = "arithmetic")
-asian_geom_MC = asian_MC(S,N,T,r,K, n, type = "geometric")
-asian_anal = asian_anal(S,N,T,sigma,r,K)
-asian_cv = asian_arith_MC + asian_anal + asian_geom_MC
-#%%
-"""
-3.3.b: different parameter settings.
-"""
-# strike
-K = np.linspace(50, 99, 99-50)
-# number of paths
-N = np.linspace(2, 365*2, 365*2-1)
-# number of time points
-=======
-N=50
-
-d = ((np.log(S/K) + ((r-(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
-d_s = np.exp(-r*T)*N_(-d)
-print("\n")
-print("Black-Scholes = ", d_s)
-
-epsilons = [0.1]
-time = 100
-
-option_prices = []
-option_prices2 = []
-
-for epsilon in epsilons:
-    print(epsilon)
-
-    np.random.seed(42)
-    value = []
-    for _ in range(time):
-        value.append(ST(K, S, r, sigma, T))
-    option_prices.append(np.exp(-r*T)*np.mean(value))
-
-    np.random.seed(42)
-    value2 = []
-    for _ in range(time):
-        value2.append(ST(K, S+epsilon, r, sigma, T))
-    option_prices2.append(np.exp(-r*T)*np.mean(value2))
-
-print(option_prices, option_prices2)
-
-for i in range(len(option_prices)):
-    delta = abs((option_prices2[i] - option_prices[i])/epsilon)
-    print("Delta = ", delta)
-
-print("Perc difference:", 100 - (delta/d_s*100)) 
->>>>>>> 032ba89957e7c380e10ab087571f80d57358fab3
