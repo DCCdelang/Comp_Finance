@@ -25,6 +25,11 @@ def eulerMethodPut(S,T,K,r,vol):
     S_T = S * np.exp((r-0.5*vol**2)*T + vol*(T**0.5)*Z)
     return max(K-S_T,0)
 
+def eulerMethodCall(S,T,K,r,vol):
+    Z = np.random.normal()
+    S_T = S * np.exp((r-0.5*vol**2)*T + vol*(T**0.5)*Z)
+    return max(S_T-K,0)
+
 def N_func(x):
     return norm.cdf(x)
 
@@ -124,12 +129,50 @@ plt.show()
 Part II: Estimation of Sensitivities in MC
 """
 
-# 1)
+# 1) Bump and Revalue method
 
-epsilon = [0, 0.01, 0.02, 0.5]
+print("Analytical:", black_scholes(vol, S, T, K, r))
 
-for S in :
+epsilon = [0.01, 0.02, 0.5]
+N_samples = 1000000
+
+for eps in epsilon:
+    print(S+eps)
+    samples = []
+    np.random.seed(42)
     for i in range(N_samples):
-        sample = eulerMethodPut(S,T,K,r,vol)
+        sample = eulerMethodPut(S+eps,T,K,r,vol)
         samples.append(sample)
     average = np.exp(-r*T)*np.mean(samples)
+    print(average)
+
+    samples2 = []
+    np.random.seed(42)
+    for i in range(N_samples):
+        sample2 = eulerMethodPut(S,T,K,r,vol)
+        samples2.append(sample2)
+    average2 = np.exp(-r*T)*np.mean(samples2)
+    print(average2)
+
+    print("Procent:",((average-average2)/eps)/average*100)
+    print("Dif:", (average-average2)/eps,"\n")
+
+
+#%%
+# 2) Digital option
+
+N_samples = 100
+
+payment = 0
+payoff_list = []
+np.random.seed(42)
+for i in range(N_samples):
+    payoff = eulerMethodPut(S,T,K,r,vol)
+    if payoff != 0:
+        payoff += 1
+    payoff_list.append(payoff)
+
+print(payoff_list)
+
+# Pathwise method
+

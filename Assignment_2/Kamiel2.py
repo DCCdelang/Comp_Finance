@@ -20,7 +20,7 @@ def option_price(K, S, r, sigma, T, pay_offs):
 def ST(K, S, r, sigma, T):
    
     Z = np.random.normal()
-    ST = S* (np.exp( (r-0.5*sigma**2)*T + sigma*np.sqrt(T)*Z))
+    ST = S* (np.exp( (r-0.5*(sigma**2))*T + sigma*np.sqrt(T)*Z))
     
     return max(K-ST, 0)
 
@@ -203,40 +203,37 @@ r = 0.06
 sigma = 0.2
 T = 1
 N=50
-epsilons = [0.0001]
+
 d = ((np.log(S/K) + ((r-(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
-d_s = -N_(-d)
+d_s = np.exp(-r*T)*N_(-d)
 print("\n")
 print("Black-Scholes = ", d_s)
 
+epsilons = [0.1]
+time = 100
+
 option_prices = []
-
 option_prices2 = []
-value = []
-value2 = []
-time = [100,10000,100000]
 
-np.random.seed(42)
 for epsilon in epsilons:
     print(epsilon)
-    for i in time:
-        for _ in range(i):
-            approxList = ST(K, S, r, sigma, T)
-            value.append(approxList)
-        option_prices.append(option_price(K, S, r, sigma, T, value))
 
-np.random.seed(42)
-for epsilon in epsilons:
-    print(epsilon)
-    for i in time:
-        for _ in range(i):
-            approx_list2 = ST(K, S + epsilon, r, sigma, T)
-            value2.append(approx_list2)
-        option_prices2.append(option_price(K, S + epsilon, r, sigma, T, value2))
+    np.random.seed(42)
+    value = []
+    for _ in range(time):
+        value.append(ST(K, S, r, sigma, T))
+    option_prices.append(np.exp(-r*T)*np.mean(value))
 
+    np.random.seed(42)
+    value2 = []
+    for _ in range(time):
+        value2.append(ST(K, S+epsilon, r, sigma, T))
+    option_prices2.append(np.exp(-r*T)*np.mean(value2))
 
 print(option_prices, option_prices2)
 
-for i in range(3):
+for i in range(len(option_prices)):
     delta = abs((option_prices2[i] - option_prices[i])/epsilon)
     print("Delta = ", delta)
+
+print("Perc difference:", 100 - (delta/d_s*100)) 
