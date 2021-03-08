@@ -266,12 +266,6 @@ def eulerMethod_Z(S,T,K,r,vol):
     S_T = S * np.exp((r-0.5*(vol**2))*T + vol*(T**0.5)*Z)
     return S_T, Z
 
-def binary_put_payoff(S_T, K):
-    if S_T < K:
-        return 1.0
-    else:
-        return 0.0
-
 N_samples = 100000
 
 # Likelihood ratio method for binary digital delta approximation for european put
