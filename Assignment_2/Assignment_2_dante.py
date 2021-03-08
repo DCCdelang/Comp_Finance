@@ -20,18 +20,22 @@ import time
 Part 1: Basic Option Valuation
 """
 
-def eulerMethodPut(S,T,K,r,vol):
+def eulerMethod(S,T,K,r,vol):
     Z = np.random.normal()
     S_T = S * np.exp((r-0.5*vol**2)*T + vol*(T**0.5)*Z)
-    return max(K-S_T,0)
+    return S_T
 
-def eulerMethodCall(S,T,K,r,vol):
-    Z = np.random.normal()
-    S_T = S * np.exp((r-0.5*vol**2)*T + vol*(T**0.5)*Z)
-    return max(S_T-K,0)
+def call_payoff(S_T, K):
+    return max(S_T - K, 0.0)
+
+def put_payoff(S_T, K):
+    return max(K - S_T, 0.0)
 
 def N_func(x):
     return norm.cdf(x)
+
+def N_func_deriv(x):
+    return norm.pdf(x)
 
 def black_scholes(vol, S, T, K, r):
     d1 = (np.log(S/K) + (r+0.5*vol**2)*T)/(vol*T**0.5)
@@ -42,13 +46,13 @@ def monte_Carlo(S,T,K,r,vol,factor_list,simulations):
     averages = []
     for factor in factor_list:
         N_samples = 10**factor
-        for sim in range(simulations):
+        for _ in range(simulations):
             samples = []
-            for i in range(N_samples):
-                sample = eulerMethodPut(S,T,K,r,vol)
-                samples.append(sample)
+            for _ in range(N_samples):
+                S_T = eulerMethod(S,T,K,r,vol)
+                samples.append(call_payoff(S_T, K))
             average = np.exp(-r*T)*np.mean(samples)
-            std = np.std(samples)
+            # std = np.std(samples)
             averages.append([N_samples,average])
     return averages
     # df = pd.DataFrame(averages,columns=["N_samples","value"])
@@ -63,11 +67,11 @@ T = 1
 # First test
 
 factor_list = [1,2,3,4,5,6]
-simulations = 20
+simulations = 2
 
 MC_list = monte_Carlo(S,T,K,r,vol,factor_list,simulations)
 df = pd.DataFrame(MC_list,columns=["N_samples","value"])
-df.to_csv("MC_normal.csv")
+# df.to_csv("MC_normal.csv")
 
 print(df)
 
@@ -131,48 +135,164 @@ Part II: Estimation of Sensitivities in MC
 
 # 1) Bump and Revalue method
 
-print("Analytical:", black_scholes(vol, S, T, K, r))
+# Analytical delta for european put option (call - 1)
+BS_Put = (N_func(((np.log(S/K) + (r+0.5*vol**2)*T)/(vol*T**0.5))))-1
+print("Analytical", BS_Put)
 
-epsilon = [0.01, 0.02, 0.5]
-N_samples = 1000000
+epsilon = [0.000001,0.00001,0.0001,0.001,0.01,0.1]
+factor_list = [4,5,6,7]
+bump_data =  [ [] for _ in range(len(factor_list)) ]
+print(bump_data)
 
-for eps in epsilon:
-    print(S+eps)
-    samples = []
-    np.random.seed(42)
-    for i in range(N_samples):
-        sample = eulerMethodPut(S+eps,T,K,r,vol)
-        samples.append(sample)
-    average = np.exp(-r*T)*np.mean(samples)
-    print(average)
+# Bump and revalue method to calculate delta for ordinary european put option
+for pos in range(len(factor_list)):
+    N_samples = 10**factor_list[pos]
+    bump_data[pos].append(N_samples)
+    for eps in epsilon:
+        samples = []
+        np.random.seed(42)
+        for _ in range(N_samples):
+            S_T = eulerMethod(S+eps,T,K,r,vol)
+            samples.append(put_payoff(S_T,K))
+        average = np.exp(-r*T)*np.mean(samples)
+        SE = np.std(samples)/N_samples
+        # print("price1:", average)
 
-    samples2 = []
-    np.random.seed(42)
-    for i in range(N_samples):
-        sample2 = eulerMethodPut(S,T,K,r,vol)
-        samples2.append(sample2)
-    average2 = np.exp(-r*T)*np.mean(samples2)
-    print(average2)
+        samples2 = []
+        np.random.seed(42)
+        for _ in range(N_samples):
+            S_T2 = eulerMethod(S,T,K,r,vol)
+            samples2.append(put_payoff(S_T2, K))
+        average2 = np.exp(-r*T)*np.mean(samples2)
+        SE2 = np.std(samples2)/N_samples
+        # print("price2:",average2)
 
-    print("Procent:",((average-average2)/eps)/average*100)
-    print("Dif:", (average-average2)/eps,"\n")
+        Delta = ((average-average2)/eps)
+        print("Delta:",Delta)
+        print("Error:", (Delta-BS_Put)/BS_Put,"\n")
+        bump_data[pos].append([Delta, (Delta-BS_Put)/BS_Put])
+
+df = pd.DataFrame(bump_data,columns= ["Samples","0.000001+error","0.00001+error","0.0001+error","0.001+error","0.01+error","0.1+error"])
+df.to_csv("Bump_revalue_put.csv")
 
 
 #%%
+
 # 2) Digital option
 
 N_samples = 100
 
-payment = 0
-payoff_list = []
+# Binary pay off functions
+def binary_call_payoff(S_T, K):
+    if S_T >= K:
+        return 1.0
+    else:
+        return 0.0
+
+def binary_put_payoff(S_T, K):
+    if S_T < K:
+        return 1.0
+    else:
+        return 0.0
+
+# Black scholes analytical delta for binary put and call
+binary_BS_Call = (np.exp(-r*T)*N_func_deriv((np.log(S/K) + (r-0.5*vol**2)*T)/(vol*T**0.5)))/(S*vol*T**0.5)
+print(binary_BS_Call,"\n")
+
+binary_BS_Put = -(np.exp(-r*T)*N_func_deriv((np.log(S/K) + (r-0.5*vol**2)*T)/(vol*T**0.5)))/(S*vol*T**0.5)
+print(binary_BS_Put,"\n")
+
+factor_list = [4,5]
+binary_bump_data = [ [] for _ in range(len(factor_list)) ]
+
+# Bump and revalue method for binary put delta approximation
+epsilon = [0.001, 0.01, 0.1]
+for pos in range(len(factor_list)):
+    N_samples = 10**factor_list[pos]
+    binary_bump_data[pos].append(N_samples)
+    for eps in epsilon:
+        payoff_list = []
+        np.random.seed(42)
+        for i in range(N_samples):
+            S_T = np.exp(-r*T)*(N_func(-((np.log((S+eps)/K) + (r-0.5*vol**2)*T)/(vol*T**0.5))))
+            # payoff = binary_put_payoff(S_T, K) 
+            payoff_list.append(S_T)
+        price = np.mean(payoff_list)
+        print("Price:", price)
+
+        payoff_list2 = []
+        np.random.seed(42)
+        for i in range(N_samples):
+            S_T2 = np.exp(-r*T)*(N_func(-((np.log(S/K) + (r-0.5*vol**2)*T)/(vol*T**0.5))))
+            # payoff2 = binary_put_payoff(S_T2, K) 
+            payoff_list2.append(S_T2)
+        price2 = np.mean(payoff_list2)
+        print("Price2:", price2)
+        Delta = ((price-price2)/eps)
+        print("Delta:",Delta)
+        print("Error:", (Delta-binary_BS_Put)/binary_BS_Put,"\n")
+        binary_bump_data[pos].append([Delta, (Delta-binary_BS_Put)/binary_BS_Put])
+df = pd.DataFrame(binary_bump_data,columns= ["Samples","0.001","0.01","0.1"])
+df.to_csv("Bump_revalue_put_binary2.csv")
+
+#%%
+# Pathwise method 
+
+N_samples = 100000
+
+# Pathwise method for approximation regular european put delta
+delta_list = []
 np.random.seed(42)
 for i in range(N_samples):
-    payoff = eulerMethodPut(S,T,K,r,vol)
-    if payoff != 0:
-        payoff += 1
-    payoff_list.append(payoff)
+    S_T = eulerMethod(S,T,K,r,vol)
+    binary_payoff = binary_put_payoff(S_T, K)
+    delta_list.append(np.exp(-r*T)*binary_payoff*S_T/S)
+delta = np.mean(delta_list)
+print("Delta:", delta)
 
-print(payoff_list)
+# Attempt on using bump and revalue method for digital delta approximation
+epsilon = [0.0001]
+N_samples = 1000000
+for eps in epsilon:
+    payoff_list = []
+    np.random.seed(42)
+    for i in range(N_samples):
+        S_T = eulerMethod(S+eps,T,K,r,vol)
+        binary_payoff = binary_call_payoff(S_T, K)
+        payoff_list.append(np.exp(-r*T)*binary_payoff)
+    price = np.mean(payoff_list)
+    print("Price:", price)
 
-# Pathwise method
+    payoff_list2 = []
+    np.random.seed(42)
+    for i in range(N_samples):
+        S_T2 = eulerMethod(S,T,K,r,vol)
+        binary_payoff2 = binary_call_payoff(S_T2, K)
+        payoff_list2.append(np.exp(-r*T)*binary_payoff2)
+    price2 = np.mean(payoff_list2)
+    print("Price2:", price2)
+    Delta = ((price-price2)/eps)
+    print("Delta:",Delta)
+    print("Error:", (Delta-binary_BS_Call)/binary_BS_Call,"\n")
 
+#%%
+# Likelihood ratio method
+
+def eulerMethod_Z(S,T,K,r,vol):
+    Z = np.random.normal()
+    S_T = S * np.exp((r-0.5*(vol**2))*T + vol*(T**0.5)*Z)
+    return S_T, Z
+
+N_samples = 1000000
+
+# Likelihood ratio method for binary digital delta approximation for european put
+delta_list = []
+np.random.seed(42)
+for i in range(N_samples):
+    S_T, Z = eulerMethod_Z(S,T,K,r,vol)
+    binary_payoff = binary_put_payoff(S_T, K)
+    delta_list.append(np.exp(-r*T)*binary_payoff*(Z/(S*vol*T**0.5)))
+delta = np.mean(delta_list)
+print("Delta:", delta)
+
+print((delta-binary_BS_Put)/binary_BS_Put)
