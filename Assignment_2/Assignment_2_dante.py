@@ -202,78 +202,61 @@ print(binary_BS_Call,"\n")
 binary_BS_Put = -(np.exp(-r*T)*N_func_deriv((np.log(S/K) + (r-0.5*vol**2)*T)/(vol*T**0.5)))/(S*vol*T**0.5)
 print(binary_BS_Put,"\n")
 
-factor_list = [4,5]
+factor_list = [4,5,6]
 binary_bump_data = [ [] for _ in range(len(factor_list)) ]
 
 # Bump and revalue method for binary put delta approximation
-epsilon = [0.001, 0.01, 0.1]
+epsilon = [0.001, 0.01, 0.1,]
 for pos in range(len(factor_list)):
     N_samples = 10**factor_list[pos]
     binary_bump_data[pos].append(N_samples)
     for eps in epsilon:
         payoff_list = []
-        np.random.seed(42)
+        np.random.seed(100)
         for i in range(N_samples):
-            S_T = np.exp(-r*T)*(N_func(-((np.log((S+eps)/K) + (r-0.5*vol**2)*T)/(vol*T**0.5))))
-            # payoff = binary_put_payoff(S_T, K) 
-            payoff_list.append(S_T)
-        price = np.mean(payoff_list)
+            # S_T = (N_func(-((np.log((S+eps)/K) + (r-0.5*vol**2)*T)/(vol*T**0.5))))
+            S_T = eulerMethod(S+eps,T,K,r,vol)
+            payoff = binary_put_payoff(S_T, K) 
+            payoff_list.append(payoff)
+        price = np.exp(-r*T)*np.mean(payoff_list)
         print("Price:", price)
 
         payoff_list2 = []
         np.random.seed(42)
         for i in range(N_samples):
-            S_T2 = np.exp(-r*T)*(N_func(-((np.log(S/K) + (r-0.5*vol**2)*T)/(vol*T**0.5))))
-            # payoff2 = binary_put_payoff(S_T2, K) 
-            payoff_list2.append(S_T2)
-        price2 = np.mean(payoff_list2)
+            # S_T2 = (N_func(-((np.log(S/K) + (r-0.5*vol**2)*T)/(vol*T**0.5))))
+            S_T2 = eulerMethod(S,T,K,r,vol)
+            payoff2 = binary_put_payoff(S_T2, K) 
+            payoff_list2.append(payoff2)
+        price2 = np.exp(-r*T)*np.mean(payoff_list2)
         print("Price2:", price2)
         Delta = ((price-price2)/eps)
         print("Delta:",Delta)
-        print("Error:", (Delta-binary_BS_Put)/binary_BS_Put,"\n")
-        binary_bump_data[pos].append([Delta, (Delta-binary_BS_Put)/binary_BS_Put])
+        error = []
+        for i in range(N_samples):
+            error.append(payoff_list2[i]-payoff_list[i])
+        se = (np.std(error)/(np.sqrt(N_samples)/eps))
+        print("Error:",se,"\n")
+        binary_bump_data[pos].append([Delta, se])
 df = pd.DataFrame(binary_bump_data,columns= ["Samples","0.001","0.01","0.1"])
-df.to_csv("Bump_revalue_put_binary2.csv")
+df.to_csv("Bump_revalue_put_binary_dif_3.csv")
 
 #%%
 # Pathwise method 
 
-N_samples = 100000
+N_samples = 10000
 
 # Pathwise method for approximation regular european put delta
 delta_list = []
 np.random.seed(42)
 for i in range(N_samples):
     S_T = eulerMethod(S,T,K,r,vol)
-    binary_payoff = binary_put_payoff(S_T, K)
+    binary_payoff = np.exp(K-S_T)/(1+np.exp(K-S_T))**2
     delta_list.append(np.exp(-r*T)*binary_payoff*S_T/S)
 delta = np.mean(delta_list)
-print("Delta:", delta)
-
-# Attempt on using bump and revalue method for digital delta approximation
-epsilon = [0.0001]
-N_samples = 1000000
-for eps in epsilon:
-    payoff_list = []
-    np.random.seed(42)
-    for i in range(N_samples):
-        S_T = eulerMethod(S+eps,T,K,r,vol)
-        binary_payoff = binary_call_payoff(S_T, K)
-        payoff_list.append(np.exp(-r*T)*binary_payoff)
-    price = np.mean(payoff_list)
-    print("Price:", price)
-
-    payoff_list2 = []
-    np.random.seed(42)
-    for i in range(N_samples):
-        S_T2 = eulerMethod(S,T,K,r,vol)
-        binary_payoff2 = binary_call_payoff(S_T2, K)
-        payoff_list2.append(np.exp(-r*T)*binary_payoff2)
-    price2 = np.mean(payoff_list2)
-    print("Price2:", price2)
-    Delta = ((price-price2)/eps)
-    print("Delta:",Delta)
-    print("Error:", (Delta-binary_BS_Call)/binary_BS_Call,"\n")
+std = np.std(delta_list)/(N_samples**0.5)
+print("Delta:", delta, std)
+print("Error", (binary_BS_Put+delta)/binary_BS_Put)
 
 #%%
 # Likelihood ratio method
@@ -283,7 +266,13 @@ def eulerMethod_Z(S,T,K,r,vol):
     S_T = S * np.exp((r-0.5*(vol**2))*T + vol*(T**0.5)*Z)
     return S_T, Z
 
-N_samples = 1000000
+def binary_put_payoff(S_T, K):
+    if S_T < K:
+        return 1.0
+    else:
+        return 0.0
+
+N_samples = 100000
 
 # Likelihood ratio method for binary digital delta approximation for european put
 delta_list = []
