@@ -1,4 +1,3 @@
-#%%
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -147,22 +146,23 @@ print(asian_geom)
 
 
 #%%
-nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000]
+nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
 #nn = [100000]
+#nn = [1000000]
 asian_MC_list = []
 asian_anal_list = []
 standard_error = []
 columns = ["Values", "Simulation"]
 df_final = pd.DataFrame()
 for n in nn:
-    MC = asian_MC(S,N,T,sigma,r,K,n,type_op = "geometric", param="None")
+    #MC = asian_MC(S,N,T,sigma,r,K,n,type_op = "geometric", param="None")
     #asian_MC_list.append(MC[0])
     #standard_error.append(MC[1])
     asian_anal_list.append(asian_anal(S,N,T,sigma,r,K))
 
 #%%
-nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000]
-frames = [ pd.read_csv(f"asian_MC_{n}.csv") for n in nn ]
+nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
+frames = [ pd.read_csv(f"Asiandata/asian_MC_{n}.csv") for n in nn ]
 result = pd.concat(frames)
 print(result)
 result.to_csv("asian_MC_final")
@@ -172,26 +172,28 @@ result.to_csv("asian_MC_final")
 """
 
 #df = pd.read_csv("jToverN/asian_MC_final")
+nn = [100,500, 1000,5000, 10000, 50000, 100000, 500000, 1000000]
+
+result = pd.read_csv(f"asian_MC_final")
 sns.lineplot(data=result, x="Simulation", y="Values", label = "Monte Carlo")
 plt.plot(nn, asian_anal_list, label = "Analytical")
 plt.xscale("log")
+plt.xlabel("Paths", fontsize = 14)
+plt.ylabel("Option price", fontsize = 14)
 plt.legend()
 plt.savefig("Asian_1_2.pdf")
 plt.show()
-#df_final.append(df, ignore_index=True)
-#df_final.to_csv(f"asian_MC_final.csv")
-"""
-plt.plot(nn, asian_MC_list, label = "Monte Carlo")
-plt.plot(nn, asian_anal_list, label = "Analytical")
-plt.plot(nn, np.asarray(asian_MC_list) + np.asarray(standard_error))
-plt.plot(nn, np.asarray(asian_MC_list) - np.asarray(standard_error))
-plt.legend()
-plt.show()
-"""
-#plt.xscale("log") 
-#plt.savefig("Convergence_option_price.pdf")
+#%%
+print(asian_anal_list[0])
+data_4 = pd.read_csv(f"Asiandata/asian_MC_10000.csv")
+se_4 = np.std(data_4["Values"])/np.sqrt(10000)
+print("se 10^4:", se_4)
+print("mean 10^4:", np.mean(data_4["Values"]))
 
-
+data_6 = pd.read_csv(f"Asiandata/asian_MC_1000000.csv") 
+se_6 = np.std(data_6["Values"])/np.sqrt(1000000)
+print("se 10^6:", se_6)
+print("mean 10^6:", np.mean(data_6["Values"]))
 #%%
 """
 3.3.a: Apply the control variates technique for the calculation of 
@@ -340,6 +342,9 @@ sns.lineplot(data=result, x="sigma", y="Control", label = "Control variate")
 plt.ylabel("Option value")
 plt.legend()
 plt.savefig("Asian_3_33.pdf")
+<<<<<<< HEAD
+plt.show()
+=======
 plt.show()
 
 
@@ -421,3 +426,4 @@ plt.legend()
 #plt.savefig("Asian_3_34_var.pdf")
 plt.show()
 #%%
+>>>>>>> 4f79de6c5bb7da537011827d2c117560d590780b
