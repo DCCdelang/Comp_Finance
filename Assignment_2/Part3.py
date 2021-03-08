@@ -342,9 +342,6 @@ sns.lineplot(data=result, x="sigma", y="Control", label = "Control variate")
 plt.ylabel("Option value")
 plt.legend()
 plt.savefig("Asian_3_33.pdf")
-<<<<<<< HEAD
-plt.show()
-=======
 plt.show()
 
 
@@ -426,4 +423,3 @@ plt.legend()
 #plt.savefig("Asian_3_34_var.pdf")
 plt.show()
 #%%
->>>>>>> 4f79de6c5bb7da537011827d2c117560d590780b
