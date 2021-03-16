@@ -15,10 +15,10 @@ def initialize_grid(max_iter_time, plate_length, boundary_value):
     u_initial = 0.0
 
     # Boundary conditions (fixed temperature)
-    u_top = boundary_value
+    u_top = 0.0
     u_left = 0.0
     u_bottom = 0.0
-    u_right = 0.0
+    u_right = boundary_value
 
     # Set the initial condition
     u.fill(u_initial)
