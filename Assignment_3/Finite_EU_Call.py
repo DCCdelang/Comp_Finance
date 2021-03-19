@@ -16,9 +16,6 @@ def option_value_bs(St, K, T, sigma, r, t=0):
     d2 = d1 - sigma * math.sqrt(T - t)
     return St * norm.cdf(d1) - K * math.exp(-r * (T - t)) * norm.cdf(d2)
 
-def hedge_parameter_bs(St, K, T, sigma, r, t=0):
-    return norm.cdf((math.log(St/K) + (r + sigma ** 2 * 0.5) * (T - t)) / (sigma * math.sqrt(T - t)))
-
 def Europe_Call_FD(S0=100, K=110, T=1, sigma=0.3, r=0.04, Exp1=-5, Exp2=7, M=1000, N=1000, scheme='FTCS'):
     # Initialization
     X0 = math.log(S0)   
@@ -88,66 +85,71 @@ def Europe_Call_FD(S0=100, K=110, T=1, sigma=0.3, r=0.04, Exp1=-5, Exp2=7, M=100
     return option_value, V, np.exp(x_list), dx, dt
 
 
-def plot_3D(S0, K, T, sigma, r, Exp1, Exp2, M, N, scheme, restrict=True, savefig=False):
-    _, V, _, _, _ = Europe_Call_FD(S0=S0, K=K, T=T, sigma=sigma, r=r, Exp1=Exp1, Exp2=Exp2, M=M, N=N, scheme=scheme)
-    
-    fig = plt.figure(figsize=(10, 8))
-    ax = Axes3D(fig)
-    if restrict:
-        x_range = np.linspace(Exp1, Exp2, M+2)
-        idx = np.where(x_range > 3.5)[0][0]
-        idx2 = np.where(x_range > 5)[0][0]
-        V = V[idx:idx2, :]
-    else:
-        idx = 0
-        idx2 = -1
-    S_list = []
-    for value in np.linspace(Exp1,Exp2, M+2)[idx:idx2]:
-        S_list.append(np.exp(value))
-    t, S = np.meshgrid(np.linspace(0, 1, N+1), S_list)
-    
-    ax.plot_surface(S, t, V, cmap='binary', linewidth=0, antialiased=True)
-    ax.view_init(20, 100)
-    ax.set_xlabel('S')
-    ax.set_ylabel('tau')
-    ax.set_zlabel('option price')
-    if savefig:
-        plt.savefig(f'3d_grid_{scheme}_restrict_{restrict}.png', dpi=200)
-    plt.show()
+if __name__ == "__main__":
 
-Exp_low = -6
-Exp_high = 8
-M = 1000
-N = 1000
+    Exp_low = -6
+    Exp_high = 8
+    M = 1000
+    N = 1000
 
-# # r = 4%; vol = 30%; S0 = 100; K = 110;
-# bs_opt_value = option_value_bs(100, 110, 1, 0.3, 0.04)
-# print("Black scholes value:",bs_opt_value)
+    """
+    FTCS Scheme
+    """
 
-# opt_val, V, _, dX, dT = Europe_Call_FD(S0=100, K=110, T=1, sigma=0.3, r=0.04, Exp1=Exp_low, Exp2=Exp_high, M=M, N=N, scheme='FTCS')
-# print('FTCS option value: %.4f   \nDelta_X: %.4f   \nDelta_tau: %.4f' % (opt_val, dX, dT))
-# error = (opt_val / bs_opt_value - 1) * 100
-# print('Relative error: %.4f%%' % error)
+    # r = 4%; vol = 30%; S0 = 100; K = 110;
+    bs_opt_value = option_value_bs(100, 110, 1, 0.3, 0.04)
+    print("Black scholes value:",bs_opt_value)
 
-# # r = 4%; vol = 30%; S0 = 110; K = 110
-# bs_opt_value = option_value_bs(110, 110, 1, 0.3, 0.04)
-# print("Black scholes value:",bs_opt_value)
+    opt_val, V, _, dX, dT = Europe_Call_FD(S0=100, K=110, T=1, sigma=0.3, r=0.04, Exp1=Exp_low, Exp2=Exp_high, M=M, N=N, scheme='FTCS')
+    print('FTCS option value: %.4f   \nDelta_X: %.4f   \nDelta_tau: %.4f' % (opt_val, dX, dT))
+    error = (opt_val / bs_opt_value - 1) * 100
+    print('Relative error: %.4f%%' % error)
 
-# opt_val, V, _, dX, dT = Europe_Call_FD(S0=110, K=110, T=1, sigma=0.3, r=0.04, Exp1=Exp_low, Exp2=Exp_high, M=M, N=N, scheme='FTCS')
-# print('FTCS option value: %.4f   \nDelta_X: %.4f   \nDelta_tau: %.4f' % (opt_val, dX, dT))
-# error = (opt_val / bs_opt_value - 1) * 100
-# print('Relative error: %.4f%%' % error)
+    # r = 4%; vol = 30%; S0 = 110; K = 110
+    bs_opt_value = option_value_bs(110, 110, 1, 0.3, 0.04)
+    print("Black scholes value:",bs_opt_value)
 
-# # r = 4%; vol = 30%; S0 = 120; K = 110
-# bs_opt_value = option_value_bs(120, 110, 1, 0.3, 0.04)
-# print("Black scholes value:",bs_opt_value)
+    opt_val, V, _, dX, dT = Europe_Call_FD(S0=110, K=110, T=1, sigma=0.3, r=0.04, Exp1=Exp_low, Exp2=Exp_high, M=M, N=N, scheme='FTCS')
+    print('FTCS option value: %.4f   \nDelta_X: %.4f   \nDelta_tau: %.4f' % (opt_val, dX, dT))
+    error = (opt_val / bs_opt_value - 1) * 100
+    print('Relative error: %.4f%%' % error)
 
-# opt_val, V, _, dX, dT = Europe_Call_FD(S0=120, K=110, T=1, sigma=0.3, r=0.04, Exp1=Exp_low, Exp2=Exp_high, M=M, N=N, scheme='FTCS')
-# print('FTCS option value: %.4f   \nDelta_X: %.4f   \nDelta_tau: %.4f' % (opt_val, dX, dT))
-# error = (opt_val / bs_opt_value - 1) * 100
-# print('Relative error: %.4f%%' % error)
+    # r = 4%; vol = 30%; S0 = 120; K = 110
+    bs_opt_value = option_value_bs(120, 110, 1, 0.3, 0.04)
+    print("Black scholes value:",bs_opt_value)
 
+    opt_val, V, _, dX, dT = Europe_Call_FD(S0=120, K=110, T=1, sigma=0.3, r=0.04, Exp1=Exp_low, Exp2=Exp_high, M=M, N=N, scheme='FTCS')
+    print('FTCS option value: %.4f   \nDelta_X: %.4f   \nDelta_tau: %.4f' % (opt_val, dX, dT))
+    error = (opt_val / bs_opt_value - 1) * 100
+    print('Relative error: %.4f%%' % error)
 
-plot_3D(S0=100, K=110, T=1, sigma=0.3, r=0.04, Exp1=Exp_low, Exp2=Exp_high, M=M, N=N, scheme='FTCS', restrict=True)
+    """
+    Crank Nicholsen Scheme
+    """
 
-plot_3D(S0=110, K=110, T=1, sigma=0.3, r=0.04, Exp1=Exp_low, Exp2=Exp_high, M=M, N=N, scheme='CN', restrict=True)
+    # r = 4%; vol = 30%; S0 = 100; K = 110;
+    bs_opt_value = option_value_bs(100, 110, 1, 0.3, 0.04)
+    print("Black scholes value:",bs_opt_value)
+
+    opt_val, V, _, dX, dT = Europe_Call_FD(S0=100, K=110, T=1, sigma=0.3, r=0.04, Exp1=Exp_low, Exp2=Exp_high, M=M, N=N, scheme='CN')
+    print('CN option value: %.4f \nDelta_X: %.4f \nDelta_tau: %.4f' % (opt_val, dX, dT))
+    error = (opt_val / bs_opt_value - 1) * 100
+    print('Relative error: %.4f%%' % error)
+
+    # r = 4%; vol = 30%; S0 = 110; K = 110
+    bs_opt_value = option_value_bs(110, 110, 1, 0.3, 0.04)
+    print("Black scholes value:",bs_opt_value)
+
+    opt_val, V, _, dX, dT = Europe_Call_FD(S0=110, K=110, T=1, sigma=0.3, r=0.04, Exp1=Exp_low, Exp2=Exp_high, M=M, N=N, scheme='CN')
+    print('CN option value: %.4f \nDelta_X: %.4f \nDelta_tau: %.4f' % (opt_val, dX, dT))
+    error = (opt_val / bs_opt_value - 1) * 100
+    print('Relative error: %.4f%%' % error)
+
+    # r = 4%; vol = 30%; S0 = 120; K = 110
+    bs_opt_value = option_value_bs(120, 110, 1, 0.3, 0.04)
+    print("Black scholes value:",bs_opt_value)
+
+    opt_val, V, _, dX, dT = Europe_Call_FD(S0=120, K=110, T=1, sigma=0.3, r=0.04, Exp1=Exp_low, Exp2=Exp_high, M=M, N=N, scheme='CN')
+    print('CN option value: %.4f \nDelta_X: %.4f \nDelta_tau: %.4f' % (opt_val, dX, dT))
+    error = (opt_val / bs_opt_value - 1) * 100
+    print('Relative error: %.4f%%' % error)
