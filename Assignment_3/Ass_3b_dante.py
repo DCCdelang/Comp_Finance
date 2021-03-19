@@ -69,12 +69,11 @@ def price_call_explicit(S, K, T, r, sigma, N, M, CN = False):
     t = np.linspace(0,T,N+1)
     V = np.zeros((N+1,M+1)) #...
     
-    
     if CN == False:
         # Set the boundary conditions
-        V[:,-1] = top_boundary_condition(K,T,S_max,r,t)
-        V[:,0] = bottom_boundary_condition(t)
-        V[-1,:] = final_boundary_condition(K,S) #...
+        V[:,-1] = S_max-np.exp(-r*(T-t))*K
+        V[:,0] = np.zeros(t.shape)
+        V[-1,:] = np.maximum(S-K,0)
 
         # Apply the recurrence relation
         a,b,c = compute_abc(K,T,sigma,r,S[1:-1],dt,dS)
@@ -85,6 +84,7 @@ def price_call_explicit(S, K, T, r, sigma, N, M, CN = False):
             W = compute_W(a,b,c,V[i,0],V[i,M])
             # Use `dot` to multiply a vector by a sparse matrix
             V[i-1,1:M] = (identity-Lambda*dt).dot( V[i,1:M] ) - W*dt
+
     elif CN == True:
         # Apply the recurrence relation
         a,b,c = compute_abc_CN(K,T,sigma,r,S[1:-1],dt,dS)
@@ -114,25 +114,14 @@ T = 1
 N = 1000 # t
 M = 100 # S
 
-V, t, S = price_call_explicit(S, K, T, r, sigma, N, M, CN = True)
-print(V[-1,-1])
-# S_min=0
-# S_max= S*(1+sigma)
-# dS = (S_max-S_min)/M
-# S = np.linspace(S_min,S_max,M+1)
-# print(dS/S)
-# print(S/dS)
-# print(S)
+V, t, S = price_call_explicit(S, K, T, r, sigma, N, M, CN = False)
+
 print(V.shape)
-# print(t.shape)
 print(S,V)
 
 from matplotlib import cm 
 
-y = np.linspace(0,1,N+1)
-x = np.linspace(0,120,M+1)
-
-X, Y = np.meshgrid(x, y)
+X, Y = np.meshgrid(S, t)
 print("X.shape is: ", X.shape)
 
 # Plot S
