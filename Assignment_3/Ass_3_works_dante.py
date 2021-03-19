@@ -116,26 +116,6 @@ print("\n",FD_Schemes(S0=110, K=110, T=1, v=0.3, r=0.04, M1=-5, M2=7, N_X=1000, 
 
 bs_opt_value = option_value_bs(100, 110, 1, 0.3, 0.04)
 
-# opt_val, grid, _, dX, dT = FD_Schemes(S0=100, K=110, T=1, v=0.3, r=0.04,
-#                                       M1=f_M1, M2=f_M2, N_X=f_N_X, N_T=f_N_T, scheme='FTCS')
-# print('Option value: %.4f     Delta_X: %.4f     Delta_tau: %.4f' % (opt_val, dX, dT))
-# error = (opt_val / bs_opt_value - 1) * 100
-# print('Relative error: %.4f%%' % error)
-
-# opt_val, grid, _, dX, dT = FD_Schemes(S0=100, K=110, T=1, v=0.3, r=0.04,
-#                                       M1=f_M1, M2=f_M2, N_X=f_N_X, N_T=f_N_T, scheme='CN')
-# print('Option value: %.4f     Delta_X: %.4f     Delta_tau: %.4f' % (opt_val, dX, dT))
-# error = (opt_val / bs_opt_value - 1) * 100
-# print('Relative error: %.4f%%' % error)
-
-# bs_opt_value_2 = option_value_bs(110, 110, 1, 0.3, 0.04)
-
-
-# opt_val, grid, _, dX, dT = FD_Schemes(S0=110, K=110, T=1, v=0.3, r=0.04,
-#                                       M1=f_M1, M2=f_M2, N_X=f_N_X, N_T=f_N_T, scheme='FTCS')
-# print('Option value: %.4f     Delta_X: %.4f     Delta_tau: %.4f' % (opt_val, dX, dT))
-# error = (opt_val / bs_opt_value_2 - 1) * 100
-# print('Relative error: %.4f%%' % error)
 
 def plot_3d_grid(S0, K, T, v, r, M1, M2, N_X, N_T, scheme, restrict=True, savefig=False):
     print(f'Scheme {scheme}')
@@ -157,10 +137,10 @@ def plot_3d_grid(S0, K, T, v, r, M1, M2, N_X, N_T, scheme, restrict=True, savefi
         S_list.append(np.exp(value))
     t, S = np.meshgrid(np.linspace(0, 1, N_T+1), S_list)
     
-    ax.plot_surface(S, t, grid, cmap='coolwarm', linewidth=0, antialiased=True)
+    ax.plot_surface(S, t, grid, cmap='Greens', linewidth=0, antialiased=True)
     ax.view_init(20, 100)
     ax.set_xlabel('S')
-    ax.set_ylabel('tau')
+    ax.set_ylabel('t')
     ax.set_zlabel('option price')
     if savefig:
         plt.savefig(f'3d_grid_{scheme}_restrict_{restrict}.png', dpi=200)
