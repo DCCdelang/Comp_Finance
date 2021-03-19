@@ -72,7 +72,7 @@ def price_call_explicit(S, K, T, r, sigma, N, M):
     for i in range(N,0,-1):
         W = compute_W(a,b,c,V[i,0],V[i,M])
         # Use `dot` to multiply a vector by a sparse matrix
-        V[i-1,1:M] = (identity+Lambda*dt).dot( V[i,1:M] ) - W*dt
+        V[i-1,1:M] = (identity-Lambda*dt).dot( V[i,1:M] ) - W*dt
         
     return V, t, S
 
