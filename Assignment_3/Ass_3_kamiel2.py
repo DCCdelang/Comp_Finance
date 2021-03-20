@@ -138,17 +138,17 @@ def plot_3d_grid(S0, K, T, v, r, M1, M2, N_X, N_T, scheme, restrict=True, savefi
     S_list = []
     for value in np.linspace(M1,M2, N_X+2)[idx:idx2]:
         S_list.append(np.exp(value))
-    t, S = np.meshgrid(np.linspace(0, 1, N_T+1), S_list)
+    t, S = np.meshgrid(np.linspace(1, 0, N_T+1), S_list)
     
-    ax.plot_surface(S, t, grid, cmap='cool', linewidth=0, antialiased=True)
+    ax.plot_surface(S, t, grid, cmap='Greens', linewidth=0, antialiased=True)
     ax.view_init(20, 100)
-    ax.tick_params(labelsize=14)
-    ax.set_xlabel('S', fontsize=14)
-    ax.set_ylabel('t', fontsize=14)
-    ax.set_zlabel('option price', fontsize=14)
+    ax.tick_params(labelsize=16)
+    ax.set_xlabel('S0', fontsize=16)
+    ax.set_ylabel('t', fontsize=16)
+    ax.set_zlabel('option price', fontsize=16)
     if savefig:
         plt.savefig(f'3d_plot.pdf', dpi=200)
-    # plt.show()
+    plt.show()
 
 
 
@@ -160,48 +160,48 @@ f_N_T = 1000
 plot_3d_grid(S0=100, K=110, T=1, v=0.3, r=0.04, M1=f_M1, M2=f_M2, N_X=f_N_X, N_T=f_N_T, scheme='FTCS', restrict=True, savefig=True)
 
 
-def compute_and_plot_delta(S0=100, K=110, T=1, v=0.3, r=0.04, M1=-5, M2=7, N_X=2000, N_T=1000, scheme='CN',
-                           restrict=True, S_min=10, S_max=200, savefig=False):
-    # Get FD Scheme data
-    _, grid, S0_val, _, _ = FD_Schemes(S0, K, T, v, r, M1, M2, N_X, N_T, scheme=scheme)
+# def compute_and_plot_delta(S0=100, K=110, T=1, v=0.3, r=0.04, M1=-5, M2=7, N_X=2000, N_T=1000, scheme='CN',
+#                            restrict=True, S_min=10, S_max=200, savefig=False):
+#     # Get FD Scheme data
+#     _, grid, S0_val, _, _ = FD_Schemes(S0, K, T, v, r, M1, M2, N_X, N_T, scheme=scheme)
     
-    x_values = np.linspace(M1, M2, N_X+2)
-    V = grid[:, -1]
+#     x_values = np.linspace(M1, M2, N_X+2)
+#     V = grid[:, -1]
     
-    # Compute deltas for FD Schemes, either restricted to interval or on full domain
-    fd_delta = []
-    bs_delta = []
-    if not restrict:
-        for i in np.arange(1, N_X+1):
-            fd_delta.append((V[i+1] - V[i-1]) / (S0_val[i+1] - S0_val[i-1]))
-            bs_delta.append(hedge_parameter_bs(S0_val[i], K, T, v, r))
+#     # Compute deltas for FD Schemes, either restricted to interval or on full domain
+#     fd_delta = []
+#     bs_delta = []
+#     if not restrict:
+#         for i in np.arange(1, N_X+1):
+#             fd_delta.append((V[i+1] - V[i-1]) / (S0_val[i+1] - S0_val[i-1]))
+#             bs_delta.append(hedge_parameter_bs(S0_val[i], K, T, v, r))
 
-        S0_val = S0_val[1:-1]
-    else:
-        S_values = np.arange(S_min-1, S_max+1, 1)
+#         S0_val = S0_val[1:-1]
+#     else:
+#         S_values = np.arange(S_min-1, S_max+1, 1)
         
-        for i in np.arange(1, len(S_values)-1):
-            V_i = np.interp(np.log(S_values[i-1]), x_values, V)
+#         for i in np.arange(1, len(S_values)-1):
+#             V_i = np.interp(np.log(S_values[i-1]), x_values, V)
 
-            V_i_next = np.interp(np.log(S_values[i+1]), x_values, V)
-            fd_delta.append((V_i_next - V_i) / (S_values[i+1] - S_values[i-1]))
-            bs_delta.append(hedge_parameter_bs(S_values[i], K, T, v, r))
-        S0_val = S_values[1:-1]
+#             V_i_next = np.interp(np.log(S_values[i+1]), x_values, V)
+#             fd_delta.append((V_i_next - V_i) / (S_values[i+1] - S_values[i-1]))
+#             bs_delta.append(hedge_parameter_bs(S_values[i], K, T, v, r))
+#         S0_val = S_values[1:-1]
     
-    # Plot lines
-    plt.figure(figsize=(12, 10))
-    plt.plot(S0_val, fd_delta, label=scheme, alpha=0.8)
-    plt.plot(S0_val, bs_delta, label='Black-Scholes', alpha=0.6)
-    plt.xlabel('$S_0$')
-    plt.ylabel('Delta')
-    plt.legend()
-    if savefig:
-        plt.savefig(f'delta_N_X_{N_X}_restrict_{restrict}.png', dpi=200)
-    plt.show()
+#     # Plot lines
+#     # plt.figure(figsize=(12, 10))
+#     plt.plot(S0_val, fd_delta, label=scheme, alpha=0.8)
+#     plt.plot(S0_val, bs_delta, label='Black-Scholes', alpha=0.6)
+#     plt.xlabel('$S_0$')
+#     plt.ylabel('Delta')
+#     plt.legend()
+#     if savefig:
+#         plt.savefig(f'delta_N_X_{N_X}_restrict_{restrict}.png', dpi=200)
+#     plt.show()
     
-    if restrict:
-        fd_d = np.array(fd_delta)
-        bs_d = np.array(bs_delta)
-        print(f'Mean absolute error: {np.mean(np.abs(fd_d - bs_d)):.6f}')
-compute_and_plot_delta(N_X=2000, N_T=1000, scheme='CN', restrict=True)
-print(option_value_bs(St, K, T, sigma, r, t=0))
+#     if restrict:
+#         fd_d = np.array(fd_delta)
+#         bs_d = np.array(bs_delta)
+#         print(f'Mean absolute error: {np.mean(np.abs(fd_d - bs_d)):.6f}')
+# compute_and_plot_delta(N_X=2000, N_T=1000, scheme='CN', restrict=True)
+# print(option_value_bs(St, K, T, sigma, r, t=0))
