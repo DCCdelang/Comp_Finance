@@ -1,4 +1,3 @@
-
 import math
 import random
 import numpy as np
@@ -17,8 +16,6 @@ sns.set(color_codes=True)
 def tqdm(*args, **kwargs):
     return _tqdm(*args, **kwargs, mininterval=1)
 
-
-
 # Functions for Black-Scholes formulas
 def option_value_bs(St, K, T, sigma, r, t=0):
     d1 = (math.log(St/K) + (r + sigma ** 2 * 0.5) * (T - t)) / (sigma * math.sqrt(T - t))
@@ -29,7 +26,7 @@ def option_value_bs(St, K, T, sigma, r, t=0):
 def hedge_parameter_bs(St, K, T, sigma, r, t=0):
     return norm.cdf((math.log(St/K) + (r + sigma ** 2 * 0.5) * (T - t)) / (sigma * math.sqrt(T - t)))
 
-def FD_Schemes(S0=100, K=110, T=1, v=0.3, r=0.04, M1=-5, M2=7, N_X=1000, N_T=1000, scheme='FTCS'):
+def FD_Schemes(S0=130, K=110, T=1, v=0.3, r=0.04, M1=-5, M2=7, N_X=1000, N_T=1000, scheme='FTCS'):
     assert scheme in ['FTCS', 'CN'], 'Not a valid scheme type'
     # Initialization
     X0 = math.log(S0)
@@ -114,29 +111,97 @@ f_M1 = -5
 f_M2 = 7
 f_N_X = 1000
 f_N_T = 1000
-print("\n",FD_Schemes(S0=110, K=110, T=1, v=0.3, r=0.04, M1=-5, M2=7, N_X=1000, N_T=1000, scheme='FTCS')[0],"\n")
-raise ValueError()
+S = 120
+# print("\n FTCS =",FD_Schemes(S0=S, K=110, T=1, v=0.3, r=0.04, M1=-5, M2=7, N_X=1000, N_T=1000, scheme='FTCS')[0],"\n")
+# print("\n CN = ",FD_Schemes(S0=S, K=110, T=1, v=0.3, r=0.04, M1=-5, M2=7, N_X=1000, N_T=1000, scheme='CN')[0],"\n")
 
 
-bs_opt_value = option_value_bs(100, 110, 1, 0.3, 0.04)
-
-opt_val, grid, _, dX, dT = FD_Schemes(S0=100, K=110, T=1, v=0.3, r=0.04,
-                                      M1=f_M1, M2=f_M2, N_X=f_N_X, N_T=f_N_T, scheme='FTCS')
-print('Option value: %.4f     Delta_X: %.4f     Delta_tau: %.4f' % (opt_val, dX, dT))
-error = (opt_val / bs_opt_value - 1) * 100
-print('Relative error: %.4f%%' % error)
-
-opt_val, grid, _, dX, dT = FD_Schemes(S0=100, K=110, T=1, v=0.3, r=0.04,
-                                      M1=f_M1, M2=f_M2, N_X=f_N_X, N_T=f_N_T, scheme='CN')
-print('Option value: %.4f     Delta_X: %.4f     Delta_tau: %.4f' % (opt_val, dX, dT))
-error = (opt_val / bs_opt_value - 1) * 100
-print('Relative error: %.4f%%' % error)
-
-bs_opt_value_2 = option_value_bs(110, 110, 1, 0.3, 0.04)
+# print("BS = ", option_value_bs(S, 110, 1, 0.3, 0.04))
+# raise ValueError()
 
 
-opt_val, grid, _, dX, dT = FD_Schemes(S0=110, K=110, T=1, v=0.3, r=0.04,
-                                      M1=f_M1, M2=f_M2, N_X=f_N_X, N_T=f_N_T, scheme='FTCS')
-print('Option value: %.4f     Delta_X: %.4f     Delta_tau: %.4f' % (opt_val, dX, dT))
-error = (opt_val / bs_opt_value_2 - 1) * 100
-print('Relative error: %.4f%%' % error)
+def plot_3d_grid(S0, K, T, v, r, M1, M2, N_X, N_T, scheme, restrict=True, savefig=False):
+    print(f'Scheme {scheme}')
+    opt_value, grid, _, _, _ = FD_Schemes(S0=S0, K=K, T=T, v=v, r=r,
+                                          M1=M1, M2=M2, N_X=N_X, N_T=N_T, scheme=scheme)
+    
+    fig = plt.figure(figsize=(10, 8))
+    ax = Axes3D(fig)
+    if restrict:
+        x_range = np.linspace(M1, M2, f_N_X+2)
+        idx = np.where(x_range > 3.5)[0][0]
+        idx2 = np.where(x_range > 5)[0][0]
+        print(idx,idx2)
+        grid = grid[idx:idx2, :]
+    else:
+        idx = 0
+    S_list = []
+    for value in np.linspace(M1,M2, N_X+2)[idx:idx2]:
+        S_list.append(np.exp(value))
+    t, S = np.meshgrid(np.linspace(1, 0, N_T+1), S_list)
+    
+    ax.plot_surface(S, t, grid, cmap='Greens', linewidth=0, antialiased=True)
+    ax.view_init(20, 100)
+    ax.tick_params(labelsize=16)
+    ax.set_xlabel('S0', fontsize=16)
+    ax.set_ylabel('t', fontsize=16)
+    ax.set_zlabel('option price', fontsize=16)
+    if savefig:
+        plt.savefig(f'3d_plot.pdf', dpi=200)
+    plt.show()
+
+
+
+f_M1 = -5
+f_M2 = 7
+f_N_X = 1000
+f_N_T = 1000
+
+plot_3d_grid(S0=100, K=110, T=1, v=0.3, r=0.04, M1=f_M1, M2=f_M2, N_X=f_N_X, N_T=f_N_T, scheme='FTCS', restrict=True, savefig=True)
+
+
+# def compute_and_plot_delta(S0=100, K=110, T=1, v=0.3, r=0.04, M1=-5, M2=7, N_X=2000, N_T=1000, scheme='CN',
+#                            restrict=True, S_min=10, S_max=200, savefig=False):
+#     # Get FD Scheme data
+#     _, grid, S0_val, _, _ = FD_Schemes(S0, K, T, v, r, M1, M2, N_X, N_T, scheme=scheme)
+    
+#     x_values = np.linspace(M1, M2, N_X+2)
+#     V = grid[:, -1]
+    
+#     # Compute deltas for FD Schemes, either restricted to interval or on full domain
+#     fd_delta = []
+#     bs_delta = []
+#     if not restrict:
+#         for i in np.arange(1, N_X+1):
+#             fd_delta.append((V[i+1] - V[i-1]) / (S0_val[i+1] - S0_val[i-1]))
+#             bs_delta.append(hedge_parameter_bs(S0_val[i], K, T, v, r))
+
+#         S0_val = S0_val[1:-1]
+#     else:
+#         S_values = np.arange(S_min-1, S_max+1, 1)
+        
+#         for i in np.arange(1, len(S_values)-1):
+#             V_i = np.interp(np.log(S_values[i-1]), x_values, V)
+
+#             V_i_next = np.interp(np.log(S_values[i+1]), x_values, V)
+#             fd_delta.append((V_i_next - V_i) / (S_values[i+1] - S_values[i-1]))
+#             bs_delta.append(hedge_parameter_bs(S_values[i], K, T, v, r))
+#         S0_val = S_values[1:-1]
+    
+#     # Plot lines
+#     # plt.figure(figsize=(12, 10))
+#     plt.plot(S0_val, fd_delta, label=scheme, alpha=0.8)
+#     plt.plot(S0_val, bs_delta, label='Black-Scholes', alpha=0.6)
+#     plt.xlabel('$S_0$')
+#     plt.ylabel('Delta')
+#     plt.legend()
+#     if savefig:
+#         plt.savefig(f'delta_N_X_{N_X}_restrict_{restrict}.png', dpi=200)
+#     plt.show()
+    
+#     if restrict:
+#         fd_d = np.array(fd_delta)
+#         bs_d = np.array(bs_delta)
+#         print(f'Mean absolute error: {np.mean(np.abs(fd_d - bs_d)):.6f}')
+# compute_and_plot_delta(N_X=2000, N_T=1000, scheme='CN', restrict=True)
+# print(option_value_bs(St, K, T, sigma, r, t=0))
