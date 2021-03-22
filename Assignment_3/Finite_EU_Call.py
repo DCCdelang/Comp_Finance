@@ -11,15 +11,17 @@ import seaborn as sns
 sns.set(color_codes=True)
 
 
-def option_value_bs(St, K, T, sigma, r, t=0):
-    """
-    Black Scholes formula
-    """
-    d1 = (math.log(St/K) + (r + sigma ** 2 * 0.5) * (T - t)) / (sigma * math.sqrt(T - t))
-    d2 = d1 - sigma * math.sqrt(T - t)
-    return St * norm.cdf(d1) - K * math.exp(-r * (T - t)) * norm.cdf(d2)
+def black_scholes_c(S,N,T,sigma,r,K):
+    d = ((np.log(S/K) + ((r-(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
+    d_1 = d + sigma* np.sqrt(T)
+    return (S*norm(d_1)) - (K*np.exp(-r*T)*norm(d))
 
-def Europe_Call_FD(S0=100, K=110, T=1, sigma=0.3, r=0.04, Exp1=-5, Exp2=7, M=1000, N=1000, scheme='FTCS'):
+def black_scholes_p(S,N,T,sigma,r,K):
+    d = ((np.log(S/K) + ((r-(sigma**2)/2)) * T )/(sigma*np.sqrt(T)))
+    d_1 = d + sigma* np.sqrt(T)
+    return  (K*np.exp(-r*T)*norm(-d)) - (S*norm(-d_1))
+
+def Europe_Call_FD(S0=100, K=110, T=1, sigma=0.3, r=0.04, Exp1=-5, Exp2=7, M=1000, N=1000, CN=True):
     """
     Initialization
     """
@@ -36,7 +38,7 @@ def Europe_Call_FD(S0=100, K=110, T=1, sigma=0.3, r=0.04, Exp1=-5, Exp2=7, M=100
     V[-1, 1:] = (np.exp(Exp2) - K) * np.exp(-r * t_list * dt)
     
     # Compute coefficients and construct matrices A and B
-    if scheme == 'FTCS':
+    if CN == False:
         alpha =  - (( r - 0.5* sigma**2) * dt / (2 * dx)) + (sigma**2   * dt / (2 * dx**2))
         beta = 1 - (r * dt + sigma**2 * dt / (dx**2))
         gamma = (( r - 0.5* sigma**2) * dt / (2 * dx)) + (sigma**2   * dt / (2 * dx**2))
@@ -56,7 +58,7 @@ def Europe_Call_FD(S0=100, K=110, T=1, sigma=0.3, r=0.04, Exp1=-5, Exp2=7, M=100
             # Compute V^{n+1}
             V[1:-1, t] = B_inv.dot(A.dot(V_prev) + k_prev - k_new)
 
-    elif scheme == "CN":
+    else:
         alpha = ((( r - 0.5* sigma**2) * dt / (2 * dx)) - (sigma**2   * dt / (2 * dx**2))) / 2
         beta = (r * dt + sigma**2 * dt / (dx**2)) / 2
         gamma = (- (( r - 0.5* sigma**2) * dt / (2 * dx)) - (sigma**2   * dt / (2 * dx**2))) / 2
@@ -95,10 +97,4 @@ if __name__ == "__main__":
     """
     FTCS Scheme
     """
-
-    # r = 4%; vol = 30%; S0 = 100; K = 110;
-    bs_opt_value = option_value_bs(100, 110, 1, 0.3, 0.04)
-    print("Black scholes value:",bs_opt_value)
-
-    opt_val, V, _, dX, dT = Europe_Call_FD(S0=100, K=110, T=1, sigma=0.3, r=0.04, Exp1=Exp_low, Exp2=Exp_high, M=M, N=N, scheme='CN')
   
